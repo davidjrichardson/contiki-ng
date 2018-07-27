@@ -31,9 +31,35 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * \addtogroup tpwsn
+ * @{
+ */
+
+/**
+ * \file
+ *      A process that periodically check the 1-hop neighbourhood
+ *      of its node, maintaining a view of its currently
+ *      connected neighbourhood.
+ * \author David Richardson <d.j.richardson@warwick.ac.uk>
+ */
+
 #ifndef TPWSN_NEIGHBOUR_DISCOVERY_H_
 #define TPWSN_NEIGHBOUR_DISCOVERY_H_
 
+/** \brief The neighbour discovery ping period */
+#ifdef TPWSN_ND_CONF_PERIOD
+#define TPWSN_ND_PERIOD TPWSN_ND_CONF_PERIOD
+#else /* TPWSN_ND_CONF_PERIOD */
+#define TPWSN_ND_PERIOD (CLOCK_SECOND * 3)
+#endif /*TPWSN_ND_CONF_PERIOD */
 
+/**
+ * Initialise the neighbour discovery module for the applications
+ * in transiently powered wireless sensor networks.
+ */
+void tpwsn_neighbour_discovery_init(void);
 
 #endif
+
+/** @} */
