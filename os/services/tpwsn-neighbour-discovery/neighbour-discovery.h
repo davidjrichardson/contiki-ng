@@ -69,6 +69,14 @@ typedef struct nd_pkt_s {
     bool is_response;       /* Flag to indicate ping or response */
 } nd_pkt_t;
 
+/** \brief An item in the neighbour cache for this node */
+typedef struct nbr_buf_item_s {
+    struct nbr_buf_item_s *next;/* The next item in the cache */
+    unsigned long last_seen;    /* The clock time a node was seen last */
+    unsigned int sequence_no;   /* The last-seen sequence number */
+    uip_ip6addr_t ipaddr;       /* The IP address of the node */
+} nbr_buf_item_t;
+
 /**
  * Initialise the neighbour discovery module for the applications
  * in transiently powered wireless sensor networks.
@@ -76,7 +84,7 @@ typedef struct nd_pkt_s {
 void tpwsn_neighbour_discovery_init(void);
 
 void tx_neighbourhood_ping(void);
-void tx_neighbourhood_ping_response(unsigned int, uip_ip6addr_t);
+void tx_neighbourhood_ping_response(unsigned int, uip_ip6addr_t*);
 
 #endif
 

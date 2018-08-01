@@ -59,10 +59,41 @@ static unsigned int global_sequence;
 LIST(neighbour_buf);
 
 /*---------------------------------------------------------------------------*/
+static nbr_buf_item_t*
+neighbour_cache_item(uip_ipaddr6_t *ipaddr)
+{
+    nbr_buf_item_t *item = list_head(neighbour_buf);
+
+    while ((item = (nbr_buf_item_t *) list_item_next(item)) != NULL) {
+        if (uip_ip6addr_comp((void *) &(item->ipaddr), (void *) ipaddr)) {
+            return item;
+        }
+    }
+
+    return NULL;
+}
+/*---------------------------------------------------------------------------*/
 static void
 tpwsn_tcpip_handler(void)
 {
-    // TODO
+    if(uip_newdata()) {
+        // TODO: Logging
+        
+        nd_pkt_t *pkt = ((nd_pkt_t *) uip_appdata)[0];
+        uip_ipaddr6_t remote_ip = uip_conn->ripaddr;
+        
+        nbr_buf_item_t *sender = neighbour_cache_item(&remote_ip);
+        
+        // The sender is someone new
+        if (sender == NULL) {
+            sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
+            sender->sequence_no = pkt->sequence;
+            sender->last_seen = (unsigned long) clock_time();
+            // TODO: Copy the IP address accross
+        }
+
+        // TODO: Sequence number response here
+    }
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
@@ -112,9 +143,21 @@ tx_neighbourhood_ping(void)
 }
 /*---------------------------------------------------------------------------*/
 void
-tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr6_t sender)
+tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr6_t *sender)
 {
-    // TODO
+    nd_pkt_t new_ping = {
+        .is_response = true,
+        .sequence = new_sequence 
+    };
+
+    // TODO: Logging
+    
+    // TX the token to the original sender
+    uip_ipaddr_copy(&nd_bcast_conn->ripaddr, sender);
+    uip_udp_packet_send(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t));
+
+    // Return to accepting incoming packets from any IP
+    uip_create_unspecified(&nd_bcast_conn->ripaddr);
 }
 /*---------------------------------------------------------------------------*/
 void
