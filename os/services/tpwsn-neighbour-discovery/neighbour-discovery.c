@@ -34,10 +34,20 @@
 #include "contiki.h"
 #include "neighbour-discovery.h"
 
+#include "lib/list.h"
+#include "lib/heapmem.h"
+
 /* Logging configuration */
 #include "sys/log.h"
 #define LOG_MODULE "TPWSN-ND"
 #define LOG_LEVEL LOG_LEVEL_INFO
+
+// The neighbour discovery timer
+static struct etimer nd_timer;
+
+// The neighbourhood buffer
+LIST(neighbour_buf;
+
 /*---------------------------------------------------------------------------*/
 // TODO: Define the ND process & port code from old repository to here
 /*---------------------------------------------------------------------------*/
