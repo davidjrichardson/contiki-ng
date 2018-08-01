@@ -52,6 +52,9 @@ static struct uip_udp_conn *nd_bcast_conn;
 // The link-local IP address for ND pings
 static uip_ipaddr_t nd_ll_ipaddr;
 
+// The node-local global sequence number for ND
+static unsigned int global_sequence;
+
 // The neighbourhood buffer
 LIST(neighbour_buf);
 
@@ -72,25 +75,40 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
         PROCESS_YIELD();
 
         if (ev == tcpip_event) {
-            // TODO
+            tpwsn_tcpip_handler();
         }
 
         if (etimer_expired(&nd_timer)) {
-            // TODO: Ping the neighbourhood
+            tx_neighbourhood_ping();
             
             etimer_set(&nd_timer, TPWSN_ND_PERIOD);
         }
     }
 
-    PROCESS_END();
-
     // TODO: Clean up memory that is allocated
+
+    PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
 void 
 tx_neighbourhood_ping(void)
 {
-    // TODO
+    nd_pkt_t new_ping = {
+        .is_response = false,
+        .sequence = global_sequence  
+    };
+
+    // Increment the global sequence number to ensure monotonicity
+    global_sequence = global_sequence + 1;
+
+    // TODO: Logging
+
+    // TX the token to link-local nodes
+    uip_ipaddr_copy(&nd_bcast_conn->ripaddr, &nd_ll_ipaddr);
+    uip_udp_packet_send(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t));
+
+    // Return to accepting incoming packets from any IP
+    uip_create_unspecified(&nd_bcast_conn->ripaddr);
 }
 /*---------------------------------------------------------------------------*/
 void
