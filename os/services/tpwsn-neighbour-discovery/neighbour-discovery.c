@@ -32,6 +32,7 @@
  */
 
 #include "contiki.h"
+#include "contiki-net.h"
 #include "neighbour-discovery.h"
 
 #include "lib/list.h"
@@ -45,14 +46,48 @@
 // The neighbour discovery timer
 static struct etimer nd_timer;
 
+// The udp link-local connection for pings
+static struct uip_udp_conn *nd_bcast_conn;
+
+// The link-local IP address for ND pings
+static uip_ipaddr_t nd_ll_ipaddr;
+
 // The neighbourhood buffer
-LIST(neighbour_buf;
+LIST(neighbour_buf);
 
 /*---------------------------------------------------------------------------*/
-// TODO: Define the ND process & port code from old repository to here
+PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
+{
+    PROCESS_BEGIN();
+
+    etimer_set(&nd_timer, TPWSN_ND_PERIOD);
+
+    while (1) {
+        PROCESS_YIELD();
+
+        if (ev == tcpip_event) {
+            // TODO
+        }
+
+        if (etimer_expired(&nd_timer)) {
+            // TODO: Ping the neighbourhood
+            
+            etimer_set(&nd_timer, TPWSN_ND_PERIOD);
+        }
+    }
+
+    PROCESS_END();
+
+    // TODO: Clean up memory that is allocated
+}
 /*---------------------------------------------------------------------------*/
 void
 tpwsn_neighbour_discovery_init(void)
 {
-    // TODO: Initialise the process
+    // TODO: Initialise lists/data structures
+    uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
+    nd_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_ND_PORT), NULL);
+    udp_bind(nd_bcast_conn, UIP_HTONS(TPWSN_ND_PORT));
+    // Start the ND process
+    process_start(&tpwsn_neighbour_discovery_process, NULL);
 }

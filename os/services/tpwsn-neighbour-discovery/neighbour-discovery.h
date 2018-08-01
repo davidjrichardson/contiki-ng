@@ -54,6 +54,19 @@
 #define TPWSN_ND_PERIOD (CLOCK_SECOND * 3)
 #endif /*TPWSN_ND_CONF_PERIOD */
 
+/** \brief The port used for neighbour discovery pings */
+#ifdef TPWSN_ND_CONF_PORT
+#define TPWSN_ND_PORT TPWSN_ND_CONF_PORT
+#else /* TPWSN_ND_CONF_PORT */
+#define TPWSN_ND_PORT 30002
+#endif /* TPWSN_ND_CONF_PORT */
+
+/** \brief The neighbour discovery ping packet structure */
+typedef struct nd_pkt_s {
+    unsigned int sequence;  /* The sequence number for the ping */
+    bool is_response;       /* Flag to indicate ping or response */
+} nd_pkt_t;
+
 /**
  * Initialise the neighbour discovery module for the applications
  * in transiently powered wireless sensor networks.
