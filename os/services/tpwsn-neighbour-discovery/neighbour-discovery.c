@@ -56,6 +56,12 @@ static uip_ipaddr_t nd_ll_ipaddr;
 LIST(neighbour_buf);
 
 /*---------------------------------------------------------------------------*/
+static void
+tpwsn_tcpip_handler(void)
+{
+    // TODO
+}
+/*---------------------------------------------------------------------------*/
 PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
 {
     PROCESS_BEGIN();
@@ -79,6 +85,18 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
     PROCESS_END();
 
     // TODO: Clean up memory that is allocated
+}
+/*---------------------------------------------------------------------------*/
+void 
+tx_neighbourhood_ping(void)
+{
+    // TODO
+}
+/*---------------------------------------------------------------------------*/
+void
+tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr6_t sender)
+{
+    // TODO
 }
 /*---------------------------------------------------------------------------*/
 void

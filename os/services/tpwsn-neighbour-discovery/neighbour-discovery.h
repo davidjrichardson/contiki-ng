@@ -47,6 +47,8 @@
 #ifndef TPWSN_NEIGHBOUR_DISCOVERY_H_
 #define TPWSN_NEIGHBOUR_DISCOVERY_H_
 
+#include "net/ipv6/uip.h"
+
 /** \brief The neighbour discovery ping period */
 #ifdef TPWSN_ND_CONF_PERIOD
 #define TPWSN_ND_PERIOD TPWSN_ND_CONF_PERIOD
@@ -72,6 +74,9 @@ typedef struct nd_pkt_s {
  * in transiently powered wireless sensor networks.
  */
 void tpwsn_neighbour_discovery_init(void);
+
+void tx_neighbourhood_ping(void);
+void tx_neighbourhood_ping_response(unsigned int, uip_ip6addr_t);
 
 #endif
 
