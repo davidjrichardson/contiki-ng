@@ -35,6 +35,8 @@
 #include "contiki-net.h"
 #include "neighbour-discovery.h"
 
+#include "net/ipv6/uip.h"
+
 #include "lib/list.h"
 #include "lib/heapmem.h"
 
@@ -60,12 +62,12 @@ LIST(neighbour_buf);
 
 /*---------------------------------------------------------------------------*/
 static nbr_buf_item_t*
-neighbour_cache_item(uip_ipaddr6_t *ipaddr)
+neighbour_cache_item(uip_ipaddr_t *ipaddr)
 {
     nbr_buf_item_t *item = list_head(neighbour_buf);
 
     while (item != NULL) {
-        if (uip_ip6addr_comp((void *) &(item->ipaddr), (void *) ipaddr)) {
+        if (uip_ip6addr_cmp((void *) &(item->ipaddr), (void *) ipaddr)) {
             return item;
         }
 
@@ -81,8 +83,8 @@ tpwsn_tcpip_handler(void)
     if(uip_newdata()) {
         // TODO: Logging
         
-        nd_pkt_t *pkt = ((nd_pkt_t *) uip_appdata)[0];
-        uip_ipaddr6_t remote_ip = uip_conn->ripaddr;
+        nd_pkt_t *pkt = ((nd_pkt_t **) uip_appdata)[0];
+        uip_ipaddr_t remote_ip = uip_conn->ripaddr;
         
         nbr_buf_item_t *sender = neighbour_cache_item(&remote_ip);
         
@@ -91,9 +93,8 @@ tpwsn_tcpip_handler(void)
             sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
             sender->sequence_no = pkt->sequence;
             sender->last_seen = (unsigned long) clock_time();
-            sender
-            // TODO: Copy the IP address accross
-            list_add(neighbour_buf);
+            uip_ipaddr_copy(&sender->ipaddr, &remote_ip);
+            list_add(neighbour_buf, sender);
 
             tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);            
         }
@@ -166,7 +167,7 @@ tx_neighbourhood_ping(void)
 }
 /*---------------------------------------------------------------------------*/
 void
-tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr6_t *sender)
+tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr_t *sender)
 {
     nd_pkt_t new_ping = {
         .is_response = true,

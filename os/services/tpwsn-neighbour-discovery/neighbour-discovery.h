@@ -49,6 +49,8 @@
 
 #include "net/ipv6/uip.h"
 
+#include <stdbool.h>
+
 /** \brief The neighbour discovery ping period */
 #ifdef TPWSN_ND_CONF_PERIOD
 #define TPWSN_ND_PERIOD TPWSN_ND_CONF_PERIOD
@@ -80,7 +82,7 @@ typedef struct nbr_buf_item_s {
     struct nbr_buf_item_s *next;/* The next item in the cache */
     unsigned long last_seen;    /* The clock time a node was seen last */
     unsigned int sequence_no;   /* The last-seen sequence number */
-    uip_ip6addr_t ipaddr;       /* The IP address of the node */
+    uip_ipaddr_t ipaddr;       /* The IP address of the node */
 } nbr_buf_item_t;
 
 /**
@@ -90,7 +92,7 @@ typedef struct nbr_buf_item_s {
 void tpwsn_neighbour_discovery_init(void);
 
 void tx_neighbourhood_ping(void);
-void tx_neighbourhood_ping_response(unsigned int, uip_ip6addr_t*);
+void tx_neighbourhood_ping_response(unsigned int, uip_ipaddr_t*);
 
 #endif
 
