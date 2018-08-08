@@ -64,10 +64,12 @@ neighbour_cache_item(uip_ipaddr6_t *ipaddr)
 {
     nbr_buf_item_t *item = list_head(neighbour_buf);
 
-    while ((item = (nbr_buf_item_t *) list_item_next(item)) != NULL) {
+    while (item != NULL) {
         if (uip_ip6addr_comp((void *) &(item->ipaddr), (void *) ipaddr)) {
             return item;
         }
+
+        item = (nbr_buf_item_t *) list_item_next(item);
     }
 
     return NULL;
@@ -89,10 +91,23 @@ tpwsn_tcpip_handler(void)
             sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
             sender->sequence_no = pkt->sequence;
             sender->last_seen = (unsigned long) clock_time();
+            sender
             // TODO: Copy the IP address accross
+            list_add(neighbour_buf);
+
+            tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);            
         }
 
-        // TODO: Sequence number response here
+        if (pkt->is_response) {
+            global_sequence = max(global_sequence, pkt->sequence);
+        } else {
+            bool lost_sync = (sender->sequence_no != pkt->sequence);
+            sender->sequence_no = max(sender->sequence_no, pkt->sequence);
+
+            if (lost_sync) {
+                tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);            
+            }
+        }
     }
 }
 /*---------------------------------------------------------------------------*/
@@ -116,6 +131,14 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
         }
     }
 
+    nbr_buf_item_t *item = (nbr_buf_item_t*) list_head(neighbour_buf);
+
+    while (item != NULL) {
+        void * tmp = (void *) item;
+        item = (nbr_buf_item_t *) list_item_next(item);
+        heapmem_free(tmp);
+    }
+
     // TODO: Clean up memory that is allocated
 
     PROCESS_END();
@@ -124,13 +147,13 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
 void 
 tx_neighbourhood_ping(void)
 {
+    // Increment the global sequence number to ensure monotonicity
+    global_sequence = global_sequence + 1;
+
     nd_pkt_t new_ping = {
         .is_response = false,
         .sequence = global_sequence  
     };
-
-    // Increment the global sequence number to ensure monotonicity
-    global_sequence = global_sequence + 1;
 
     // TODO: Logging
 
@@ -164,6 +187,7 @@ void
 tpwsn_neighbour_discovery_init(void)
 {
     // TODO: Initialise lists/data structures
+    global_sequence = 0;
     uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
     nd_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_ND_PORT), NULL);
     udp_bind(nd_bcast_conn, UIP_HTONS(TPWSN_ND_PORT));

@@ -63,6 +63,12 @@
 #define TPWSN_ND_PORT 30002
 #endif /* TPWSN_ND_CONF_PORT */
 
+/** \brief A function for getting the maximum of two numbers */
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+_a > _b ? _a : _b; })
+
 /** \brief The neighbour discovery ping packet structure */
 typedef struct nd_pkt_s {
     unsigned int sequence;  /* The sequence number for the ping */
