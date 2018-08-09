@@ -53,7 +53,7 @@
 
 /** \brief The neighbour discovery ping period */
 #ifdef TPWSN_ND_CONF_PERIOD
-#define TPWSN_ND_PERIOD TPWSN_ND_CONF_PERIOD
+#define TPWSN_ND_PERIOD (CLOCK_SECOND * TPWSN_ND_CONF_PERIOD)
 #else /* TPWSN_ND_CONF_PERIOD */
 #define TPWSN_ND_PERIOD (CLOCK_SECOND * 3)
 #endif /*TPWSN_ND_CONF_PERIOD */

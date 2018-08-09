@@ -40,6 +40,8 @@
 #include "lib/list.h"
 #include "lib/heapmem.h"
 
+#define DEBUG DEBUG_FULL
+
 /* Logging configuration */
 #include "sys/log.h"
 
@@ -80,19 +82,21 @@ neighbour_cache_item(uip_ipaddr_t *ipaddr) {
 /*---------------------------------------------------------------------------*/
 static void
 tpwsn_tcpip_handler(void) {
+    LOG_INFO("Invoked TCPIP handler\n");
+
     if (uip_newdata()) {
         nd_pkt_t *pkt = ((nd_pkt_t **) uip_appdata)[0];
         uip_ipaddr_t remote_ip = uip_conn->ripaddr;
 
         LOG_INFO("Recv'd ND packet from ");
-        LOG_INFO_6ADDR(remote_ip);
-        LOG_INFO_("at time %lu", (unsigned long) clock_time());
+        LOG_INFO_6ADDR(&remote_ip);
+        LOG_INFO_("at time %lu\n", (unsigned long) clock_time());
 
         nbr_buf_item_t *sender = neighbour_cache_item(&remote_ip);
 
         // The sender is someone new
         if (sender == NULL) {
-            LOG_INFO("ND packet is from new neighbour");
+            LOG_INFO("ND packet is from new neighbour\n");
 
             sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
             sender->sequence_no = pkt->sequence;
@@ -102,7 +106,8 @@ tpwsn_tcpip_handler(void) {
 
             if (!pkt->is_response) {
                 LOG_INFO("Sending ping response to ");
-                LOG_INFO_6ADDR(remote_ip);
+                LOG_INFO_6ADDR(&remote_ip);
+                LOG_INFO_("\n");
 
                 tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
             }
@@ -116,23 +121,30 @@ tpwsn_tcpip_handler(void) {
 
             if (lost_sync) {
                 LOG_INFO("Neighbour ");
-                LOG_INFO_6ADDR(remote_ip);
-                LOG_INFO_(" is out of sync, sending response with seq=%u", pkt->sequence);
+                LOG_INFO_6ADDR(&remote_ip);
+                LOG_INFO_(" is out of sync, sending response with seq=%u\n", pkt->sequence);
                 tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
             }
         }
     }
 }
 /*---------------------------------------------------------------------------*/
+PROCESS(tpwsn_neighbour_discovery_process, "TPWSN Neighbour Discovery");
 PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
     PROCESS_BEGIN();
 
     etimer_set(&nd_timer, TPWSN_ND_PERIOD);
 
+    LOG_INFO("Starting ND process\n");
+
     while (1) {
         PROCESS_YIELD();
 
+        LOG_INFO("Passed YIELD, ev=%u\n", ev);
+
         if (ev == tcpip_event) {
+            LOG_INFO("TCPIP Event, invoking relevant ND handler\n");
+
             tpwsn_tcpip_handler();
         }
 
@@ -169,7 +181,7 @@ tx_neighbourhood_ping(void) {
             .sequence = global_sequence
     };
 
-    LOG_INFO("Sending ND ping to link-local neighbours at %lu",
+    LOG_INFO("Sending ND ping to link-local neighbours at %lu\n",
             (unsigned long) clock_time());
 
     // TX the token to link-local nodes
@@ -200,6 +212,8 @@ tpwsn_neighbour_discovery_init(void) {
     uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
     nd_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_ND_PORT), NULL);
     udp_bind(nd_bcast_conn, UIP_HTONS(TPWSN_ND_PORT));
+    nd_bcast_conn->rport = UIP_HTONS(TPWSN_ND_PORT);
+    nd_bcast_conn->lport = UIP_HTONS(TPWSN_ND_PORT);
     // Start the ND process
     process_start(&tpwsn_neighbour_discovery_process, NULL);
 }

@@ -1,10 +1,3 @@
-//
-// Created by david on 09/08/18.
-//
-
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
-
 #define NETSTACK_CONF_WITH_IPV6 1
-
-#endif /* PROJECT_CONF_H_ */
+#define LOG_CONF_WITH_ANNOTATE 1
+#define LOG_CONF_WITH_COMPACT_ADDR 1
