@@ -42,6 +42,7 @@
 
 /* Logging configuration */
 #include "sys/log.h"
+
 #define LOG_MODULE "TPWSN-ND"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
@@ -61,9 +62,8 @@ static unsigned int global_sequence;
 LIST(neighbour_buf);
 
 /*---------------------------------------------------------------------------*/
-static nbr_buf_item_t*
-neighbour_cache_item(uip_ipaddr_t *ipaddr)
-{
+static nbr_buf_item_t *
+neighbour_cache_item(uip_ipaddr_t *ipaddr) {
     nbr_buf_item_t *item = list_head(neighbour_buf);
 
     while (item != NULL) {
@@ -76,27 +76,36 @@ neighbour_cache_item(uip_ipaddr_t *ipaddr)
 
     return NULL;
 }
+
 /*---------------------------------------------------------------------------*/
 static void
-tpwsn_tcpip_handler(void)
-{
-    if(uip_newdata()) {
-        // TODO: Logging
-        
+tpwsn_tcpip_handler(void) {
+    if (uip_newdata()) {
         nd_pkt_t *pkt = ((nd_pkt_t **) uip_appdata)[0];
         uip_ipaddr_t remote_ip = uip_conn->ripaddr;
-        
+
+        LOG_INFO("Recv'd ND packet from ");
+        LOG_INFO_6ADDR(remote_ip);
+        LOG_INFO_("at time %lu", (unsigned long) clock_time());
+
         nbr_buf_item_t *sender = neighbour_cache_item(&remote_ip);
-        
+
         // The sender is someone new
         if (sender == NULL) {
+            LOG_INFO("ND packet is from new neighbour");
+
             sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
             sender->sequence_no = pkt->sequence;
             sender->last_seen = (unsigned long) clock_time();
             uip_ipaddr_copy(&sender->ipaddr, &remote_ip);
             list_add(neighbour_buf, sender);
 
-            tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);            
+            if (!pkt->is_response) {
+                LOG_INFO("Sending ping response to ");
+                LOG_INFO_6ADDR(remote_ip);
+
+                tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
+            }
         }
 
         if (pkt->is_response) {
@@ -106,14 +115,16 @@ tpwsn_tcpip_handler(void)
             sender->sequence_no = max(sender->sequence_no, pkt->sequence);
 
             if (lost_sync) {
-                tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);            
+                LOG_INFO("Neighbour ");
+                LOG_INFO_6ADDR(remote_ip);
+                LOG_INFO_(" is out of sync, sending response with seq=%u", pkt->sequence);
+                tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
             }
         }
     }
 }
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
-{
+PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
     PROCESS_BEGIN();
 
     etimer_set(&nd_timer, TPWSN_ND_PERIOD);
@@ -127,36 +138,39 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data)
 
         if (etimer_expired(&nd_timer)) {
             tx_neighbourhood_ping();
-            
+
             etimer_set(&nd_timer, TPWSN_ND_PERIOD);
         }
-    }
 
-    nbr_buf_item_t *item = (nbr_buf_item_t*) list_head(neighbour_buf);
-
-    while (item != NULL) {
-        void * tmp = (void *) item;
-        item = (nbr_buf_item_t *) list_item_next(item);
-        heapmem_free(tmp);
+        // TODO: Add a break-out condition
     }
 
     // TODO: Clean up memory that is allocated
 
+    nbr_buf_item_t *item = (nbr_buf_item_t *) list_head(neighbour_buf);
+
+    while (item != NULL) {
+        void *tmp = (void *) item;
+        item = (nbr_buf_item_t *) list_item_next(item);
+        heapmem_free(tmp);
+    }
+
     PROCESS_END();
 }
+
 /*---------------------------------------------------------------------------*/
-void 
-tx_neighbourhood_ping(void)
-{
+void
+tx_neighbourhood_ping(void) {
     // Increment the global sequence number to ensure monotonicity
     global_sequence = global_sequence + 1;
 
     nd_pkt_t new_ping = {
-        .is_response = false,
-        .sequence = global_sequence  
+            .is_response = false,
+            .sequence = global_sequence
     };
 
-    // TODO: Logging
+    LOG_INFO("Sending ND ping to link-local neighbours at %lu",
+            (unsigned long) clock_time());
 
     // TX the token to link-local nodes
     uip_ipaddr_copy(&nd_bcast_conn->ripaddr, &nd_ll_ipaddr);
@@ -165,28 +179,22 @@ tx_neighbourhood_ping(void)
     // Return to accepting incoming packets from any IP
     uip_create_unspecified(&nd_bcast_conn->ripaddr);
 }
+
 /*---------------------------------------------------------------------------*/
 void
-tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr_t *sender)
-{
+tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr_t *sender) {
     nd_pkt_t new_ping = {
-        .is_response = true,
-        .sequence = new_sequence 
+            .is_response = true,
+            .sequence = new_sequence
     };
 
-    // TODO: Logging
-    
-    // TX the token to the original sender
-    uip_ipaddr_copy(&nd_bcast_conn->ripaddr, sender);
-    uip_udp_packet_send(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t));
-
-    // Return to accepting incoming packets from any IP
-    uip_create_unspecified(&nd_bcast_conn->ripaddr);
+    uip_udp_packet_sendto(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t), sender,
+                          TPWSN_ND_PORT);
 }
+
 /*---------------------------------------------------------------------------*/
 void
-tpwsn_neighbour_discovery_init(void)
-{
+tpwsn_neighbour_discovery_init(void) {
     // TODO: Initialise lists/data structures
     global_sequence = 0;
     uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
