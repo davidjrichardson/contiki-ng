@@ -1,0 +1,1 @@
+#define BUILD_WITH_TPWSN_ND 1

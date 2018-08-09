@@ -36,8 +36,6 @@
 #include "contiki.h"
 #include "contiki-net.h"
 
-#include "tpwsn-neighbour-discovery/neighbour-discovery.h"
-
 /*---------------------------------------------------------------------------*/
 PROCESS(periodic_rtx_process, "Periodic Retransmission Protocol Process");
 AUTOSTART_PROCESSES(&periodic_rtx_process);
@@ -46,7 +44,7 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
 {
     PROCESS_BEGIN();
 
-    tpwsn_neighbour_discovery_init();
+    // TODO: Implement periodic RTX
 
     PROCESS_END();
 }

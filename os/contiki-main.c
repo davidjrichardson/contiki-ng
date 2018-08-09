@@ -53,6 +53,7 @@
 #include "services/orchestra/orchestra.h"
 #include "services/shell/serial-shell.h"
 #include "services/simple-energest/simple-energest.h"
+#include "services/tpwsn-neighbour-discovery/neighbour-discovery.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -145,6 +146,10 @@ main(void)
 #if BUILD_WITH_SIMPLE_ENERGEST
   simple_energest_init();
 #endif /* BUILD_WITH_SIMPLE_ENERGEST */
+
+#if BUILD_WITH_TPWSN_ND
+  tpwsn_neighbour_discovery_init();
+#endif /* BUILD_WITH_TPWSN_ND */
 
   autostart_start(autostart_processes);
 
