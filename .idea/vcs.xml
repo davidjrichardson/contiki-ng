@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/arch/cpu/cc26xx-cc13xx/lib/cc13xxware" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/arch/cpu/cc26xx-cc13xx/lib/cc26xxware" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/os/net/security/tinydtls" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tests/18-coap-lwm2m/example-lwm2m-standalone" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tools/cc2538-bsl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tools/cooja" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tools/cooja/mspsim" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tools/sensniff" vcs="Git" />
+  </component>
+</project>

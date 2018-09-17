@@ -1,0 +1,2018 @@
+cmake_minimum_required(VERSION 3.12)
+project(contiki_ng C)
+
+set(CMAKE_C_STANDARD 11)
+
+include_directories(arch/cpu/arm)
+include_directories(arch/cpu/arm/common/SD-card)
+include_directories(arch/cpu/arm/common/usb)
+include_directories(arch/cpu/arm/common/usb/cdc-acm)
+include_directories(arch/cpu/arm/common/usb/msc)
+include_directories(arch/cpu/arm/cortex-m)
+include_directories(arch/cpu/arm/cortex-m/cm3)
+include_directories(arch/cpu/arm/cortex-m/cm4)
+include_directories(arch/cpu/arm/cortex-m/CMSIS)
+include_directories(arch/cpu/cc2538)
+include_directories(arch/cpu/cc2538/dev)
+include_directories(arch/cpu/cc2538/usb)
+include_directories(arch/cpu/cc2538/usb/common)
+include_directories(arch/cpu/cc2538/usb/common/cdc-acm)
+include_directories(arch/cpu/cc26xx-cc13xx)
+include_directories(arch/cpu/cc26xx-cc13xx/dev)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc13xxware/utils/rom_crypto)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches)
+include_directories(arch/cpu/cc26xx-cc13xx/lib/cc26xxware/utils/rom_crypto)
+include_directories(arch/cpu/cc26xx-cc13xx/rf-core)
+include_directories(arch/cpu/cc26xx-cc13xx/rf-core/api)
+include_directories(arch/cpu/cc26xx-cc13xx/rf-core/ble-hal)
+include_directories(arch/cpu/msp430)
+include_directories(arch/cpu/msp430/dev)
+include_directories(arch/cpu/native)
+include_directories(arch/cpu/nrf52832)
+include_directories(arch/cpu/nrf52832/ble)
+include_directories(arch/cpu/nrf52832/dev)
+include_directories(arch/dev/bme280)
+include_directories(arch/dev/cc1200)
+include_directories(arch/dev/cc2420)
+include_directories(arch/dev/disk)
+include_directories(arch/dev/disk/mmc)
+include_directories(arch/dev/ds2411)
+include_directories(arch/dev/enc28j60)
+include_directories(arch/dev/ext-flash)
+include_directories(arch/dev/rgb-led)
+include_directories(arch/dev/sht11)
+include_directories(arch/platform/cc2538dk)
+include_directories(arch/platform/cc2538dk/dev)
+include_directories(arch/platform/cooja)
+include_directories(arch/platform/cooja/dev)
+include_directories(arch/platform/cooja/lib)
+include_directories(arch/platform/cooja/net)
+include_directories(arch/platform/cooja/sys)
+include_directories(arch/platform/jn516x)
+include_directories(arch/platform/jn516x/dev)
+include_directories(arch/platform/jn516x/dev/dr1174)
+include_directories(arch/platform/jn516x/dev/dr1175)
+include_directories(arch/platform/jn516x/dev/dr1199)
+include_directories(arch/platform/native)
+include_directories(arch/platform/nrf52dk)
+include_directories(arch/platform/nrf52dk/config)
+include_directories(arch/platform/nrf52dk/dev)
+include_directories(arch/platform/nrf52dk/rtt)
+include_directories(arch/platform/openmote-cc2538)
+include_directories(arch/platform/openmote-cc2538/dev)
+include_directories(arch/platform/sky)
+include_directories(arch/platform/sky/dev)
+include_directories(arch/platform/srf06-cc26xx)
+include_directories(arch/platform/srf06-cc26xx/launchpad)
+include_directories(arch/platform/srf06-cc26xx/launchpad/cc1310)
+include_directories(arch/platform/srf06-cc26xx/launchpad/cc1350)
+include_directories(arch/platform/srf06-cc26xx/launchpad/cc2650)
+include_directories(arch/platform/srf06-cc26xx/sensortag)
+include_directories(arch/platform/srf06-cc26xx/sensortag/cc1350)
+include_directories(arch/platform/srf06-cc26xx/sensortag/cc2650)
+include_directories(arch/platform/srf06-cc26xx/srf06)
+include_directories(arch/platform/srf06-cc26xx/srf06/cc13xx)
+include_directories(arch/platform/srf06-cc26xx/srf06/cc26xx)
+include_directories(arch/platform/zoul)
+include_directories(arch/platform/zoul/dev)
+include_directories(arch/platform/zoul/firefly)
+include_directories(arch/platform/zoul/firefly-reva)
+include_directories(arch/platform/zoul/fs/fat)
+include_directories(arch/platform/zoul/orion)
+include_directories(arch/platform/zoul/remote-reva)
+include_directories(arch/platform/zoul/remote-revb)
+include_directories(examples/6tisch/6p-packet)
+include_directories(examples/6tisch/etsi-plugtest-2017)
+include_directories(examples/6tisch/simple-node)
+include_directories(examples/6tisch/sixtop)
+include_directories(examples/coap/coap-example-client)
+include_directories(examples/coap/coap-example-server)
+include_directories(examples/coap/coap-plugtest-server)
+include_directories(examples/dev/button-hal)
+include_directories(examples/ip64-router)
+include_directories(examples/libs/deployment)
+include_directories(examples/libs/energest)
+include_directories(examples/libs/ipv6-uipbuf)
+include_directories(examples/libs/logging)
+include_directories(examples/libs/stack-check)
+include_directories(examples/lwm2m-ipso-objects)
+include_directories(examples/lwm2m-ipso-objects/zoul)
+include_directories(examples/mqtt-client)
+include_directories(examples/mqtt-client/arch/cpu/cc2538)
+include_directories(examples/mqtt-client/arch/cpu/cc26xx-cc13xx)
+include_directories(examples/mqtt-client/arch/platform/cc2538dk)
+include_directories(examples/mqtt-client/arch/platform/openmote-cc2538)
+include_directories(examples/mqtt-client/arch/platform/srf06-cc26xx)
+include_directories(examples/mqtt-client/arch/platform/zoul)
+include_directories(examples/multicast)
+include_directories(examples/multicast/srf06-cc26xx)
+include_directories(examples/multicast/zoul)
+include_directories(examples/platform-specific/cc26xx)
+include_directories(examples/platform-specific/cc26xx/ble-ipv6)
+include_directories(examples/platform-specific/cc26xx/cc26xx-web-demo)
+include_directories(examples/platform-specific/cc26xx/very-sleepy-demo)
+include_directories(examples/platform-specific/jn516x/rpl)
+include_directories(examples/platform-specific/jn516x/rpl/coap-dongle-node)
+include_directories(examples/platform-specific/jn516x/rpl/coap-dr1175-node)
+include_directories(examples/platform-specific/jn516x/rpl/coap-dr1199-node)
+include_directories(examples/platform-specific/jn516x/rpl/node)
+include_directories(examples/platform-specific/jn516x/tsch)
+include_directories(examples/platform-specific/jn516x/tsch/simple-sensor-network/node)
+include_directories(examples/platform-specific/jn516x/tsch/tx-power-verification/node)
+include_directories(examples/platform-specific/jn516x/tsch/uart1-test-node)
+include_directories(examples/platform-specific/nrf52dk/coap-demo)
+include_directories(examples/platform-specific/nrf52dk/mqtt-demo)
+include_directories(examples/platform-specific/zoul)
+include_directories(examples/platform-specific/zoul/at-test)
+include_directories(examples/platform-specific/zoul/orion/client)
+include_directories(examples/platform-specific/zoul/orion/ip64-router)
+include_directories(examples/platform-specific/zoul/rev-b)
+include_directories(examples/platform-specific/zoul/rtcc)
+include_directories(examples/rpl-border-router)
+include_directories(examples/rpl-border-router/sky)
+include_directories(examples/rpl-border-router/webserver)
+include_directories(examples/sensniff)
+include_directories(examples/sensniff/cc2538dk)
+include_directories(examples/sensniff/jn516x)
+include_directories(examples/sensniff/openmote-cc2538)
+include_directories(examples/sensniff/pool)
+include_directories(examples/sensniff/srf06-cc26xx)
+include_directories(examples/sensniff/zoul)
+include_directories(examples/slip-radio)
+include_directories(examples/slip-radio/sky)
+include_directories(examples/storage/cfs-coffee)
+include_directories(examples/websocket)
+include_directories(os)
+include_directories(os/dev)
+include_directories(os/lib)
+include_directories(os/lib/dbg-io)
+include_directories(os/lib/fs/fat)
+include_directories(os/lib/json)
+include_directories(os/net)
+include_directories(os/net/app-layer/coap)
+include_directories(os/net/app-layer/coap/tinydtls-support)
+include_directories(os/net/app-layer/http-socket)
+include_directories(os/net/app-layer/httpd-ws)
+include_directories(os/net/app-layer/mqtt)
+include_directories(os/net/ipv6)
+include_directories(os/net/ipv6/multicast)
+include_directories(os/net/mac)
+include_directories(os/net/mac/ble)
+include_directories(os/net/mac/csma)
+include_directories(os/net/mac/framer)
+include_directories(os/net/mac/nullmac)
+include_directories(os/net/mac/tsch)
+include_directories(os/net/mac/tsch/sixtop)
+include_directories(os/net/nullnet)
+include_directories(os/net/routing)
+include_directories(os/net/routing/rpl-classic)
+include_directories(os/net/routing/rpl-lite)
+include_directories(os/net/security/tinydtls)
+include_directories(os/net/security/tinydtls/aes)
+include_directories(os/net/security/tinydtls/contiki-support)
+include_directories(os/net/security/tinydtls/ecc)
+include_directories(os/net/security/tinydtls/ecc/tests)
+include_directories(os/net/security/tinydtls/posix)
+include_directories(os/net/security/tinydtls/posix/lib)
+include_directories(os/net/security/tinydtls/sha2)
+include_directories(os/services/at-master)
+include_directories(os/services/deployment)
+include_directories(os/services/ip64)
+include_directories(os/services/ipso-objects)
+include_directories(os/services/lwm2m)
+include_directories(os/services/orchestra)
+include_directories(os/services/rpl-border-router)
+include_directories(os/services/rpl-border-router/native)
+include_directories(os/services/shell)
+include_directories(os/services/simple-energest)
+include_directories(os/services/slip-cmd)
+include_directories(os/services/tpwsn-neighbour-discovery)
+include_directories(os/services/unit-test)
+include_directories(os/storage/antelope)
+include_directories(os/storage/cfs)
+include_directories(os/sys)
+include_directories(tests/07-simulation-base/code-data-structures)
+include_directories(tests/07-simulation-base/code-ipv6/receiver)
+include_directories(tests/07-simulation-base/code-ipv6/sender)
+include_directories(tests/07-simulation-base/code-ringbufindex)
+include_directories(tests/07-simulation-base/code-slip-radio)
+include_directories(tests/13-ieee802154/code-6tisch)
+include_directories(tests/13-ieee802154/code-flush-nbr-queue)
+include_directories(tests/13-ieee802154/code-panid-handling)
+include_directories(tests/14-rpl-lite/code)
+include_directories(tests/15-rpl-classic/code)
+include_directories(tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m)
+include_directories(tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-hex)
+include_directories(tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-ipv4)
+include_directories(tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/tinydtls-support)
+include_directories(tools/cooja/examples/project_new_interface)
+include_directories(tools/cooja/mspsim/tests)
+include_directories(tools/serial-io)
+include_directories(tools/sky/uip6-bridge)
+include_directories(tools/sky/uip6-bridge/dev)
+include_directories(tools/wpcapslip)
+include_directories(tools/wpcapslip/net)
+
+add_executable(contiki_ng
+        arch/cpu/arm/common/SD-card/cfs-sdcard.c
+        arch/cpu/arm/common/SD-card/config.h
+        arch/cpu/arm/common/SD-card/efs-sdcard.h
+        arch/cpu/arm/common/SD-card/efsl_spi.h
+        arch/cpu/arm/common/SD-card/sdcard.h
+        arch/cpu/arm/common/usb/cdc-acm/cdc-acm-descriptors.c
+        arch/cpu/arm/common/usb/cdc-acm/cdc-acm.c
+        arch/cpu/arm/common/usb/cdc-acm/cdc-acm.h
+        arch/cpu/arm/common/usb/cdc-acm/cdc.h
+        arch/cpu/arm/common/usb/msc/msc-descriptors.c
+        arch/cpu/arm/common/usb/msc/rbc_const.h
+        arch/cpu/arm/common/usb/msc/rbc_struct.h
+        arch/cpu/arm/common/usb/msc/scsi_command.h
+        arch/cpu/arm/common/usb/msc/scsi_sense.h
+        arch/cpu/arm/common/usb/msc/scsi_struct.h
+        arch/cpu/arm/common/usb/msc/spc2_const.h
+        arch/cpu/arm/common/usb/msc/spc2_struct.h
+        arch/cpu/arm/common/usb/msc/usb-msc-bulk.c
+        arch/cpu/arm/common/usb/msc/usb-msc-bulk.h
+        arch/cpu/arm/common/usb/msc/usb-rbc.c
+        arch/cpu/arm/common/usb/descriptors.h
+        arch/cpu/arm/common/usb/string-descriptors.h
+        arch/cpu/arm/common/usb/usb-api.h
+        arch/cpu/arm/common/usb/usb-arch.h
+        arch/cpu/arm/common/usb/usb-core.c
+        arch/cpu/arm/common/usb/usb-core.h
+        arch/cpu/arm/common/usb/usb.h
+        arch/cpu/arm/cortex-m/cm3/cm3-def.h
+        arch/cpu/arm/cortex-m/cm4/cm4-def.h
+        arch/cpu/arm/cortex-m/CMSIS/cmsis_armcc.h
+        arch/cpu/arm/cortex-m/CMSIS/cmsis_armcc_V6.h
+        arch/cpu/arm/cortex-m/CMSIS/cmsis_gcc.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cm0.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cm0plus.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cm3.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cm4.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cm7.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cmFunc.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cmInstr.h
+        arch/cpu/arm/cortex-m/CMSIS/core_cmSimd.h
+        arch/cpu/arm/cortex-m/CMSIS/core_sc000.h
+        arch/cpu/arm/cortex-m/CMSIS/core_sc300.h
+        arch/cpu/arm/cortex-m/memory-barrier-cortex.h
+        arch/cpu/arm/cortex-m/mutex-cortex.h
+        arch/cpu/arm/arm-def.h
+        arch/cpu/cc2538/dev/adc.c
+        arch/cpu/cc2538/dev/adc.h
+        arch/cpu/cc2538/dev/aes.c
+        arch/cpu/cc2538/dev/aes.h
+        arch/cpu/cc2538/dev/ana-regs.h
+        arch/cpu/cc2538/dev/bignum-driver.c
+        arch/cpu/cc2538/dev/bignum-driver.h
+        arch/cpu/cc2538/dev/cbc-mac.c
+        arch/cpu/cc2538/dev/cbc-mac.h
+        arch/cpu/cc2538/dev/cbc.c
+        arch/cpu/cc2538/dev/cbc.h
+        arch/cpu/cc2538/dev/cc2538-aes-128.c
+        arch/cpu/cc2538/dev/cc2538-aes-128.h
+        arch/cpu/cc2538/dev/cc2538-ccm-star.c
+        arch/cpu/cc2538/dev/cc2538-ccm-star.h
+        arch/cpu/cc2538/dev/cc2538-dev.h
+        arch/cpu/cc2538/dev/cc2538-rf.c
+        arch/cpu/cc2538/dev/cc2538-rf.h
+        arch/cpu/cc2538/dev/cc2538-sensors.h
+        arch/cpu/cc2538/dev/cc2538-temp-sensor.c
+        arch/cpu/cc2538/dev/cc2538-temp-sensor.h
+        arch/cpu/cc2538/dev/ccm.c
+        arch/cpu/cc2538/dev/ccm.h
+        arch/cpu/cc2538/dev/cctest.h
+        arch/cpu/cc2538/dev/crypto.c
+        arch/cpu/cc2538/dev/crypto.h
+        arch/cpu/cc2538/dev/ctr.c
+        arch/cpu/cc2538/dev/ctr.h
+        arch/cpu/cc2538/dev/ecb.c
+        arch/cpu/cc2538/dev/ecb.h
+        arch/cpu/cc2538/dev/ecc-algorithm.c
+        arch/cpu/cc2538/dev/ecc-algorithm.h
+        arch/cpu/cc2538/dev/ecc-curve.c
+        arch/cpu/cc2538/dev/ecc-curve.h
+        arch/cpu/cc2538/dev/ecc-driver.c
+        arch/cpu/cc2538/dev/ecc-driver.h
+        arch/cpu/cc2538/dev/flash.h
+        arch/cpu/cc2538/dev/gcm.c
+        arch/cpu/cc2538/dev/gcm.h
+        arch/cpu/cc2538/dev/gpio-hal-arch.c
+        arch/cpu/cc2538/dev/gpio-hal-arch.h
+        arch/cpu/cc2538/dev/gpio.c
+        arch/cpu/cc2538/dev/gpio.h
+        arch/cpu/cc2538/dev/gptimer.h
+        arch/cpu/cc2538/dev/i2c.c
+        arch/cpu/cc2538/dev/i2c.h
+        arch/cpu/cc2538/dev/ioc.c
+        arch/cpu/cc2538/dev/ioc.h
+        arch/cpu/cc2538/dev/nvic.c
+        arch/cpu/cc2538/dev/nvic.h
+        arch/cpu/cc2538/dev/pka.c
+        arch/cpu/cc2538/dev/pka.h
+        arch/cpu/cc2538/dev/pwm.c
+        arch/cpu/cc2538/dev/pwm.h
+        arch/cpu/cc2538/dev/random.c
+        arch/cpu/cc2538/dev/rfcore-ffsm.h
+        arch/cpu/cc2538/dev/rfcore-sfr.h
+        arch/cpu/cc2538/dev/rfcore-xreg.h
+        arch/cpu/cc2538/dev/rfcore.h
+        arch/cpu/cc2538/dev/rom-util.h
+        arch/cpu/cc2538/dev/sha256.c
+        arch/cpu/cc2538/dev/sha256.h
+        arch/cpu/cc2538/dev/smwdthrosc.h
+        arch/cpu/cc2538/dev/soc-adc.h
+        arch/cpu/cc2538/dev/spi-arch-legacy.h
+        arch/cpu/cc2538/dev/spi-arch.c
+        arch/cpu/cc2538/dev/spi-legacy.c
+        arch/cpu/cc2538/dev/ssi.h
+        arch/cpu/cc2538/dev/sys-ctrl.c
+        arch/cpu/cc2538/dev/sys-ctrl.h
+        arch/cpu/cc2538/dev/uart.c
+        arch/cpu/cc2538/dev/uart.h
+        arch/cpu/cc2538/dev/udma.c
+        arch/cpu/cc2538/dev/udma.h
+        arch/cpu/cc2538/dev/usb-regs.h
+        arch/cpu/cc2538/dev/vdd3-sensor.c
+        arch/cpu/cc2538/dev/vdd3-sensor.h
+        arch/cpu/cc2538/dev/watchdog.c
+        arch/cpu/cc2538/usb/common/cdc-acm/cdc-acm.c
+        arch/cpu/cc2538/usb/common/cdc-acm/cdc-acm.h
+        arch/cpu/cc2538/usb/common/cdc-acm/cdc.h
+        arch/cpu/cc2538/usb/common/descriptors.h
+        arch/cpu/cc2538/usb/common/string-descriptors.h
+        arch/cpu/cc2538/usb/common/usb-api.h
+        arch/cpu/cc2538/usb/common/usb-arch.h
+        arch/cpu/cc2538/usb/common/usb-core.c
+        arch/cpu/cc2538/usb/common/usb-core.h
+        arch/cpu/cc2538/usb/common/usb.h
+        arch/cpu/cc2538/usb/cdc-acm-descriptors.c
+        arch/cpu/cc2538/usb/usb-arch.c
+        arch/cpu/cc2538/usb/usb-serial.c
+        arch/cpu/cc2538/usb/usb-serial.h
+        arch/cpu/cc2538/cc2538-conf.h
+        arch/cpu/cc2538/cc2538-def.h
+        arch/cpu/cc2538/cc2538_cm3.h
+        arch/cpu/cc2538/cfs-coffee-arch.c
+        arch/cpu/cc2538/cfs-coffee-arch.h
+        arch/cpu/cc2538/clock.c
+        arch/cpu/cc2538/cpu.h
+        arch/cpu/cc2538/dbg.c
+        arch/cpu/cc2538/ieee-addr.c
+        arch/cpu/cc2538/ieee-addr.h
+        arch/cpu/cc2538/int-master.c
+        arch/cpu/cc2538/lpm.c
+        arch/cpu/cc2538/lpm.h
+        arch/cpu/cc2538/reg.h
+        arch/cpu/cc2538/rtimer-arch.c
+        arch/cpu/cc2538/rtimer-arch.h
+        arch/cpu/cc2538/slip-arch.c
+        arch/cpu/cc2538/soc.c
+        arch/cpu/cc2538/soc.h
+        arch/cpu/cc2538/startup-gcc.c
+        arch/cpu/cc26xx-cc13xx/dev/adc-sensor.c
+        arch/cpu/cc26xx-cc13xx/dev/adc-sensor.h
+        arch/cpu/cc26xx-cc13xx/dev/aux-ctrl.c
+        arch/cpu/cc26xx-cc13xx/dev/aux-ctrl.h
+        arch/cpu/cc26xx-cc13xx/dev/batmon-sensor.c
+        arch/cpu/cc26xx-cc13xx/dev/batmon-sensor.h
+        arch/cpu/cc26xx-cc13xx/dev/cc26xx-uart.c
+        arch/cpu/cc26xx-cc13xx/dev/cc26xx-uart.h
+        arch/cpu/cc26xx-cc13xx/dev/contiki-watchdog.c
+        arch/cpu/cc26xx-cc13xx/dev/gpio-hal-arch.c
+        arch/cpu/cc26xx-cc13xx/dev/gpio-hal-arch.h
+        arch/cpu/cc26xx-cc13xx/dev/gpio-interrupt.c
+        arch/cpu/cc26xx-cc13xx/dev/oscillators.c
+        arch/cpu/cc26xx-cc13xx/dev/oscillators.h
+        arch/cpu/cc26xx-cc13xx/dev/soc-rtc.c
+        arch/cpu/cc26xx-cc13xx/dev/soc-rtc.h
+        arch/cpu/cc26xx-cc13xx/dev/soc-trng.c
+        arch/cpu/cc26xx-cc13xx/dev/soc-trng.h
+        arch/cpu/cc26xx-cc13xx/dev/spi-arch.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/adi.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/adi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/adi_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_batmon.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_batmon.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_event.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_event_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_ioc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_ioc_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_rtc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_rtc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_rtc_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_wuc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aon_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_adc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_adc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_smph.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_tdc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_tdc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_timer.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_timer.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_wuc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/aux_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ccfgread.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ccfgread.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ccfgread_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/chipinfo.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/chipinfo.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/cpu.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/cpu.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/cpu_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/crypto.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ddi.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ddi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ddi_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/debug.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/driverlib_release.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/driverlib_release.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/event.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/event_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/flash.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/flash.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/gpio.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/gpio.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/gpio_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/group_analog_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/group_aon_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/group_aux_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/i2c.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/i2c.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/i2c_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/i2s.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/i2s.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/interrupt.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/interrupt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/interrupt_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ioc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ioc_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/osc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/osc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/prcm.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/prcm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/pwr_ctrl.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/pwr_ctrl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_ble_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_ble_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_common_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_data_entry.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_hs_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_hs_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_prop_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rf_prop_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rfc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rfc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rom.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rom_crypto.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/rom_crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/setup.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/setup.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/setup_rom.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/setup_rom.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/smph.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/smph_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ssi.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/ssi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/sys_ctrl.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/sys_ctrl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/systick.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/systick.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/systick_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/timer.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/timer.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/timer_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/trng.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/trng.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/uart.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/uart.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/udma.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/udma.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/vims.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/vims.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/watchdog.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/watchdog.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/driverlib/watchdog_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/asmdefs.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_adi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_adi_0_rf.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_adi_1_synth.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_adi_2_refsys.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_adi_3_refsys.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_adi_4_aux.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aon_batmon.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aon_event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aon_ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aon_rtc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aon_sysctl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aon_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_aiodio.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_anaif.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_evctl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_sce.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_tdc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_timer.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_aux_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ccfg.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ccfg_simple_struct.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_chip_def.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_dwt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_fpb.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_itm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_rom_table.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_scs.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_tiprop.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_cpu_tpiu.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ddi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ddi_0_osc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_device.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_fcfg1.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_flash.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_gpio.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_gpt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_i2c.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_i2s.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ints.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_memmap.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_nvic.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_prcm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_rfc_dbell.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_rfc_pwr.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_rfc_rat.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_ssi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_sysctl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_trng.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_types.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_uart.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_udma.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_vims.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/inc/hw_wdt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_cpe_ble.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_cpe_ble_priv_1_2.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_cpe_genfsk.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_cpe_genook.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_cpe_lrm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_mce_genook.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_mce_hsp_4mbps.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_rfe_ble.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_rfe_genfsk.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_rfe_genook.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_rfe_hsp_4mbps.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/rf_patches/rf_patch_rfe_lrm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/startup_files/ccfg.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/startup_files/startup_gcc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/utils/rom_crypto/standalone_rom_crypto.c
+        arch/cpu/cc26xx-cc13xx/lib/cc13xxware/utils/rom_crypto/standalone_rom_crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/adi.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/adi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/adi_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_batmon.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_batmon.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_event.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_event_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_ioc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_ioc_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_rtc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_rtc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_rtc_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_wuc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aon_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_adc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_adc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_smph.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_tdc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_tdc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_timer.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_timer.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_wuc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/aux_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ccfgread.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ccfgread.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ccfgread_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/chipinfo.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/chipinfo.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/cpu.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/cpu.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/cpu_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/crypto.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ddi.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ddi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ddi_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/debug.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/driverlib_release.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/driverlib_release.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/event.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/event_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/flash.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/flash.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/gpio.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/gpio.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/gpio_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/group_analog_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/group_aon_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/group_aux_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/i2c.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/i2c.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/i2c_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/i2s.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/i2s.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/interrupt.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/interrupt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/interrupt_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ioc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ioc_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/osc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/osc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/prcm.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/prcm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/pwr_ctrl.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/pwr_ctrl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_ble_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_ble_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_common_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_data_entry.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_prop_cmd.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rf_prop_mailbox.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rfc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rfc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rom.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rom_crypto.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/rom_crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/setup.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/setup.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/setup_rom.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/setup_rom.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/smph.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/smph_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ssi.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/ssi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/sys_ctrl.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/sys_ctrl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/systick.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/systick.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/systick_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/timer.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/timer.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/timer_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/trng.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/trng.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/uart.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/uart.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/udma.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/udma.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/vims.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/vims.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/watchdog.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/watchdog.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/driverlib/watchdog_doc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/asmdefs.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_adi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_adi_0_rf.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_adi_1_synth.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_adi_2_refsys.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_adi_3_refsys.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_adi_4_aux.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aon_batmon.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aon_event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aon_ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aon_rtc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aon_sysctl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aon_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_aiodio.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_anaif.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_evctl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_sce.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_tdc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_timer.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_aux_wuc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ccfg.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ccfg_simple_struct.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_chip_def.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_dwt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_fpb.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_itm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_rom_table.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_scs.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_tiprop.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_cpu_tpiu.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_crypto.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ddi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ddi_0_osc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_device.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_event.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_fcfg1.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_flash.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_gpio.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_gpt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_i2c.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_i2s.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ints.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ioc.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_memmap.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_nvic.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_prcm.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_rfc_dbell.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_rfc_pwr.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_rfc_rat.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_smph.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_ssi.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_sysctl.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_trng.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_types.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_uart.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_udma.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_vims.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/inc/hw_wdt.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches/rf_patch_cpe_ble.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches/rf_patch_cpe_ble_priv_1_2.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches/rf_patch_cpe_genfsk.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches/rf_patch_mce_genfsk.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches/rf_patch_rfe_ble.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/rf_patches/rf_patch_rfe_genfsk.h
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/startup_files/ccfg.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/startup_files/startup_gcc.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/utils/rom_crypto/standalone_rom_crypto.c
+        arch/cpu/cc26xx-cc13xx/lib/cc26xxware/utils/rom_crypto/standalone_rom_crypto.h
+        arch/cpu/cc26xx-cc13xx/rf-core/api/ieee_cmd.h
+        arch/cpu/cc26xx-cc13xx/rf-core/api/ieee_mailbox.h
+        arch/cpu/cc26xx-cc13xx/rf-core/ble-hal/ble-hal-cc26xx.c
+        arch/cpu/cc26xx-cc13xx/rf-core/ble-hal/ble-hal-cc26xx.h
+        arch/cpu/cc26xx-cc13xx/rf-core/ble-hal/rf-ble-cmd.c
+        arch/cpu/cc26xx-cc13xx/rf-core/ble-hal/rf-ble-cmd.h
+        arch/cpu/cc26xx-cc13xx/rf-core/ble-cc2650.c
+        arch/cpu/cc26xx-cc13xx/rf-core/dot-15-4g.h
+        arch/cpu/cc26xx-cc13xx/rf-core/ieee-mode.c
+        arch/cpu/cc26xx-cc13xx/rf-core/prop-mode-tx-power.c
+        arch/cpu/cc26xx-cc13xx/rf-core/prop-mode.c
+        arch/cpu/cc26xx-cc13xx/rf-core/prop-mode.h
+        arch/cpu/cc26xx-cc13xx/rf-core/rf-ble.c
+        arch/cpu/cc26xx-cc13xx/rf-core/rf-ble.h
+        arch/cpu/cc26xx-cc13xx/rf-core/rf-core.c
+        arch/cpu/cc26xx-cc13xx/rf-core/rf-core.h
+        arch/cpu/cc26xx-cc13xx/rf-core/rf-switch.h
+        arch/cpu/cc26xx-cc13xx/rf-core/smartrf-settings.c
+        arch/cpu/cc26xx-cc13xx/rf-core/smartrf-settings.h
+        arch/cpu/cc26xx-cc13xx/ble-addr.c
+        arch/cpu/cc26xx-cc13xx/ble-addr.h
+        arch/cpu/cc26xx-cc13xx/cc13x0-cc26x0-cm3.h
+        arch/cpu/cc26xx-cc13xx/cc13xx-cc26xx-conf.h
+        arch/cpu/cc26xx-cc13xx/cc13xx-cc26xx-def.h
+        arch/cpu/cc26xx-cc13xx/ccxxware-conf.h
+        arch/cpu/cc26xx-cc13xx/clock.c
+        arch/cpu/cc26xx-cc13xx/dbg.c
+        arch/cpu/cc26xx-cc13xx/fault-handlers.c
+        arch/cpu/cc26xx-cc13xx/ieee-addr.c
+        arch/cpu/cc26xx-cc13xx/ieee-addr.h
+        arch/cpu/cc26xx-cc13xx/int-master.c
+        arch/cpu/cc26xx-cc13xx/lpm.c
+        arch/cpu/cc26xx-cc13xx/lpm.h
+        arch/cpu/cc26xx-cc13xx/random.c
+        arch/cpu/cc26xx-cc13xx/rtimer-arch.c
+        arch/cpu/cc26xx-cc13xx/rtimer-arch.h
+        arch/cpu/cc26xx-cc13xx/slip-arch.c
+        arch/cpu/cc26xx-cc13xx/ti-lib-rom.h
+        arch/cpu/cc26xx-cc13xx/ti-lib.h
+        arch/cpu/msp430/dev/button.h
+        arch/cpu/msp430/dev/flash.h
+        arch/cpu/msp430/dev/hwconf.h
+        arch/cpu/msp430/dev/lpm.h
+        arch/cpu/msp430/dev/uart0-putchar.c
+        arch/cpu/msp430/dev/uart0.h
+        arch/cpu/msp430/dev/uart1-putchar.c
+        arch/cpu/msp430/dev/uart1.h
+        arch/cpu/msp430/f1xxx/clock.c
+        arch/cpu/msp430/f1xxx/msp430.c
+        arch/cpu/msp430/f1xxx/rtimer-arch.c
+        arch/cpu/msp430/f1xxx/spi-legacy.c
+        arch/cpu/msp430/f1xxx/uart1.c
+        arch/cpu/msp430/f2xxx/msp430.c
+        arch/cpu/msp430/f2xxx/spi-legacy.c
+        arch/cpu/msp430/f2xxx/uart0.c
+        arch/cpu/msp430/f2xxx/uart1.c
+        arch/cpu/msp430/f5xxx/clock.c
+        arch/cpu/msp430/f5xxx/msp430.c
+        arch/cpu/msp430/f5xxx/rtimer-arch.c
+        arch/cpu/msp430/f5xxx/spi-legacy.c
+        arch/cpu/msp430/f5xxx/uart0.c
+        arch/cpu/msp430/f5xxx/uart1.c
+        arch/cpu/msp430/button.c
+        arch/cpu/msp430/cc2420-arch-sfd.c
+        arch/cpu/msp430/cc2420-arch-sfd.h
+        arch/cpu/msp430/cc2420-arch.c
+        arch/cpu/msp430/cc2520-arch-sfd.c
+        arch/cpu/msp430/cc2520-arch-sfd.h
+        arch/cpu/msp430/cc2520-arch.c
+        arch/cpu/msp430/flash.c
+        arch/cpu/msp430/int-master.c
+        arch/cpu/msp430/isr_compat.h
+        arch/cpu/msp430/leds-arch.c
+        arch/cpu/msp430/lpm.c
+        arch/cpu/msp430/minileds.c
+        arch/cpu/msp430/msp430-conf.h
+        arch/cpu/msp430/msp430-def.h
+        arch/cpu/msp430/rom.c
+        arch/cpu/msp430/rtimer-arch.h
+        arch/cpu/msp430/slip_uart0.c
+        arch/cpu/msp430/slip_uart1.c
+        arch/cpu/msp430/uip-ipchksum.c
+        arch/cpu/msp430/watchdog.c
+        arch/cpu/native/dev/eeprom.c
+        arch/cpu/native/dev/gpio-hal-arch.c
+        arch/cpu/native/net/tun6-net.c
+        arch/cpu/native/int-master.c
+        arch/cpu/native/native-def.h
+        arch/cpu/native/rtimer-arch.c
+        arch/cpu/native/rtimer-arch.h
+        arch/cpu/native/watchdog.c
+        arch/cpu/nrf52832/ble/ble-core.c
+        arch/cpu/nrf52832/ble/ble-core.h
+        arch/cpu/nrf52832/ble/ble-mac.c
+        arch/cpu/nrf52832/ble/ble-mac.h
+        arch/cpu/nrf52832/dev/clock.c
+        arch/cpu/nrf52832/dev/lpm.h
+        arch/cpu/nrf52832/dev/random.c
+        arch/cpu/nrf52832/dev/uart0.c
+        arch/cpu/nrf52832/dev/uart0.h
+        arch/cpu/nrf52832/dev/watchdog.c
+        arch/cpu/nrf52832/dbg.c
+        arch/cpu/nrf52832/int-master.c
+        arch/cpu/nrf52832/nrf52832-def.h
+        arch/cpu/nrf52832/rtimer-arch.c
+        arch/cpu/nrf52832/rtimer-arch.h
+        arch/dev/bme280/bme280-arch.h
+        arch/dev/bme280/bme280-sensor.c
+        arch/dev/bme280/bme280-sensor.h
+        arch/dev/bme280/bme280.c
+        arch/dev/bme280/bme280.h
+        arch/dev/cc1200/cc1200-802154g-863-870-fsk-50kbps.c
+        arch/dev/cc1200/cc1200-868-fsk-1-2kbps.c
+        arch/dev/cc1200/cc1200-arch.h
+        arch/dev/cc1200/cc1200-conf.h
+        arch/dev/cc1200/cc1200-const.h
+        arch/dev/cc1200/cc1200-rf-cfg.h
+        arch/dev/cc1200/cc1200.c
+        arch/dev/cc2420/cc2420.c
+        arch/dev/cc2420/cc2420.h
+        arch/dev/cc2420/cc2420_const.h
+        arch/dev/disk/mmc/mmc-arch.h
+        arch/dev/disk/mmc/mmc.c
+        arch/dev/disk/mmc/mmc.h
+        arch/dev/disk/disk.h
+        arch/dev/ds2411/ds2411.c
+        arch/dev/ds2411/ds2411.h
+        arch/dev/enc28j60/enc28j60-ip64-driver.c
+        arch/dev/enc28j60/enc28j60-ip64-driver.h
+        arch/dev/enc28j60/enc28j60.c
+        arch/dev/enc28j60/enc28j60.h
+        arch/dev/ext-flash/ext-flash.c
+        arch/dev/ext-flash/ext-flash.h
+        arch/dev/rgb-led/rgb-led.c
+        arch/dev/rgb-led/rgb-led.h
+        arch/dev/sht11/sht11-sensor.c
+        arch/dev/sht11/sht11-sensor.h
+        arch/dev/sht11/sht11.c
+        arch/dev/sht11/sht11.h
+        arch/platform/cc2538dk/dev/als-sensor.c
+        arch/platform/cc2538dk/dev/als-sensor.h
+        arch/platform/cc2538dk/dev/board-buttons.c
+        arch/platform/cc2538dk/dev/board.h
+        arch/platform/cc2538dk/dev/leds-arch.c
+        arch/platform/cc2538dk/dev/smartrf-sensors.c
+        arch/platform/cc2538dk/contiki-conf.h
+        arch/platform/cc2538dk/platform.c
+        arch/platform/cooja/cfs/cfs-cooja.c
+        arch/platform/cooja/dev/beep.c
+        arch/platform/cooja/dev/beep.h
+        arch/platform/cooja/dev/button-sensor.c
+        arch/platform/cooja/dev/button-sensor.h
+        arch/platform/cooja/dev/cooja-radio.c
+        arch/platform/cooja/dev/cooja-radio.h
+        arch/platform/cooja/dev/eeprom.c
+        arch/platform/cooja/dev/ip.c
+        arch/platform/cooja/dev/ip.h
+        arch/platform/cooja/dev/leds-arch.c
+        arch/platform/cooja/dev/moteid.c
+        arch/platform/cooja/dev/moteid.h
+        arch/platform/cooja/dev/pir-sensor.c
+        arch/platform/cooja/dev/pir-sensor.h
+        arch/platform/cooja/dev/rs232.c
+        arch/platform/cooja/dev/rs232.h
+        arch/platform/cooja/dev/vib-sensor.c
+        arch/platform/cooja/dev/vib-sensor.h
+        arch/platform/cooja/dev/watchdog.c
+        arch/platform/cooja/lib/simEnvChange.c
+        arch/platform/cooja/lib/simEnvChange.h
+        arch/platform/cooja/net/init-net.h
+        arch/platform/cooja/net/uip-driver.c
+        arch/platform/cooja/net/uip-driver.h
+        arch/platform/cooja/sys/clock.c
+        arch/platform/cooja/sys/cooja-log.c
+        arch/platform/cooja/sys/cooja_mt.c
+        arch/platform/cooja/sys/cooja_mt.h
+        arch/platform/cooja/sys/cooja_mtarch.c
+        arch/platform/cooja/sys/cooja_mtarch.h
+        arch/platform/cooja/testapps/hello-world.c
+        arch/platform/cooja/testapps/testbutton.c
+        arch/platform/cooja/testapps/testcfs.c
+        arch/platform/cooja/testapps/testctimer.c
+        arch/platform/cooja/testapps/testetimer.c
+        arch/platform/cooja/testapps/testsensors.c
+        arch/platform/cooja/testapps/testserial.c
+        arch/platform/cooja/testapps/testuip.c
+        arch/platform/cooja/contiki-conf.h
+        arch/platform/cooja/mtarch.c
+        arch/platform/cooja/mtarch.h
+        arch/platform/cooja/platform.c
+        arch/platform/cooja/rtimer-arch.c
+        arch/platform/cooja/rtimer-arch.h
+        arch/platform/cooja/slip-arch.c
+        arch/platform/jn516x/dev/dongle/leds-arch.c
+        arch/platform/jn516x/dev/dr1174/button-sensor.c
+        arch/platform/jn516x/dev/dr1174/button-sensor.h
+        arch/platform/jn516x/dev/dr1174/leds-arch.c
+        arch/platform/jn516x/dev/dr1175/ht-sensor.c
+        arch/platform/jn516x/dev/dr1175/ht-sensor.h
+        arch/platform/jn516x/dev/dr1175/leds-arch-1175.c
+        arch/platform/jn516x/dev/dr1175/leds-arch-1175.h
+        arch/platform/jn516x/dev/dr1175/light-sensor.c
+        arch/platform/jn516x/dev/dr1175/light-sensor.h
+        arch/platform/jn516x/dev/dr1199/leds-arch-1199.c
+        arch/platform/jn516x/dev/dr1199/leds-arch-1199.h
+        arch/platform/jn516x/dev/dr1199/pot-sensor.c
+        arch/platform/jn516x/dev/dr1199/pot-sensor.h
+        arch/platform/jn516x/dev/clock.c
+        arch/platform/jn516x/dev/exceptions.c
+        arch/platform/jn516x/dev/exceptions.h
+        arch/platform/jn516x/dev/jn516x-ccm-star.c
+        arch/platform/jn516x/dev/leds-extension.c
+        arch/platform/jn516x/dev/leds-extension.h
+        arch/platform/jn516x/dev/micromac-radio.c
+        arch/platform/jn516x/dev/micromac-radio.h
+        arch/platform/jn516x/dev/rtimer-arch-slow.c
+        arch/platform/jn516x/dev/rtimer-arch.c
+        arch/platform/jn516x/dev/rtimer-arch.h
+        arch/platform/jn516x/dev/slip_uart0.c
+        arch/platform/jn516x/dev/uart-driver.c
+        arch/platform/jn516x/dev/uart-driver.h
+        arch/platform/jn516x/dev/uart0.c
+        arch/platform/jn516x/dev/uart0.h
+        arch/platform/jn516x/dev/uart1.c
+        arch/platform/jn516x/dev/uart1.h
+        arch/platform/jn516x/dev/watchdog.c
+        arch/platform/jn516x/contiki-conf.h
+        arch/platform/jn516x/dbg.c
+        arch/platform/jn516x/int-master.c
+        arch/platform/jn516x/jn516x-def.h
+        arch/platform/jn516x/platform.c
+        arch/platform/jn516x/slip.c
+        arch/platform/native/dev/buttons.c
+        arch/platform/native/dev/xmem.c
+        arch/platform/native/cfs-coffee-arch.h
+        arch/platform/native/cfs-posix-dir.c
+        arch/platform/native/cfs-posix.c
+        arch/platform/native/clock.c
+        arch/platform/native/contiki-conf.h
+        arch/platform/native/platform.c
+        arch/platform/nrf52dk/config/nrf_drv_config.h
+        arch/platform/nrf52dk/config/pstorage_platform.h
+        arch/platform/nrf52dk/dev/button-sensor.c
+        arch/platform/nrf52dk/dev/button-sensor.h
+        arch/platform/nrf52dk/dev/leds-arch.c
+        arch/platform/nrf52dk/dev/nrf52dk-sensors.c
+        arch/platform/nrf52dk/dev/temperature-sensor.c
+        arch/platform/nrf52dk/dev/temperature-sensor.h
+        arch/platform/nrf52dk/rtt/rtt-printf.c
+        arch/platform/nrf52dk/rtt/segger-rtt-conf.h
+        arch/platform/nrf52dk/rtt/segger-rtt-printf.c
+        arch/platform/nrf52dk/rtt/segger-rtt.c
+        arch/platform/nrf52dk/rtt/segger-rtt.h
+        arch/platform/nrf52dk/contiki-conf.h
+        arch/platform/nrf52dk/nrf52dk-def.h
+        arch/platform/nrf52dk/platform.c
+        arch/platform/openmote-cc2538/dev/adxl346.c
+        arch/platform/openmote-cc2538/dev/adxl346.h
+        arch/platform/openmote-cc2538/dev/antenna.c
+        arch/platform/openmote-cc2538/dev/antenna.h
+        arch/platform/openmote-cc2538/dev/board-buttons.c
+        arch/platform/openmote-cc2538/dev/leds-arch.c
+        arch/platform/openmote-cc2538/dev/max44009.c
+        arch/platform/openmote-cc2538/dev/max44009.h
+        arch/platform/openmote-cc2538/dev/openmote-sensors.c
+        arch/platform/openmote-cc2538/dev/openmote-sensors.h
+        arch/platform/openmote-cc2538/dev/sht21.c
+        arch/platform/openmote-cc2538/dev/sht21.h
+        arch/platform/openmote-cc2538/dev/tps62730.c
+        arch/platform/openmote-cc2538/dev/tps62730.h
+        arch/platform/openmote-cc2538/board.c
+        arch/platform/openmote-cc2538/board.h
+        arch/platform/openmote-cc2538/contiki-conf.h
+        arch/platform/openmote-cc2538/platform.c
+        arch/platform/sky/apps/blink.c
+        arch/platform/sky/apps/fader.c
+        arch/platform/sky/dev/battery-sensor.c
+        arch/platform/sky/dev/button-sensor.c
+        arch/platform/sky/dev/i2c.c
+        arch/platform/sky/dev/i2c.h
+        arch/platform/sky/dev/light-sensor.c
+        arch/platform/sky/dev/light-sensor.h
+        arch/platform/sky/dev/sht11-arch.h
+        arch/platform/sky/dev/sky-sensors.c
+        arch/platform/sky/dev/sky-sensors.h
+        arch/platform/sky/dev/temperature-sensor.c
+        arch/platform/sky/dev/temperature-sensor.h
+        arch/platform/sky/dev/xmem.c
+        arch/platform/sky/cfs-coffee-arch.h
+        arch/platform/sky/contiki-conf.h
+        arch/platform/sky/contiki-sky-platform.c
+        arch/platform/sky/platform.c
+        arch/platform/sky/sky-def.h
+        arch/platform/srf06-cc26xx/common/xmem.c
+        arch/platform/srf06-cc26xx/launchpad/cc1310/board.h
+        arch/platform/srf06-cc26xx/launchpad/cc1350/board.h
+        arch/platform/srf06-cc26xx/launchpad/cc1350/rf-switch.c
+        arch/platform/srf06-cc26xx/launchpad/cc1350/tx-power-driver.c
+        arch/platform/srf06-cc26xx/launchpad/cc2650/board.h
+        arch/platform/srf06-cc26xx/launchpad/board-buttons.c
+        arch/platform/srf06-cc26xx/launchpad/board-peripherals.h
+        arch/platform/srf06-cc26xx/launchpad/board.c
+        arch/platform/srf06-cc26xx/launchpad/leds-arch.c
+        arch/platform/srf06-cc26xx/sensortag/cc1350/board.h
+        arch/platform/srf06-cc26xx/sensortag/cc1350/leds-arch.c
+        arch/platform/srf06-cc26xx/sensortag/cc2650/board.h
+        arch/platform/srf06-cc26xx/sensortag/cc2650/leds-arch.c
+        arch/platform/srf06-cc26xx/sensortag/bmp-280-sensor.c
+        arch/platform/srf06-cc26xx/sensortag/bmp-280-sensor.h
+        arch/platform/srf06-cc26xx/sensortag/board-buttons.c
+        arch/platform/srf06-cc26xx/sensortag/board-i2c.c
+        arch/platform/srf06-cc26xx/sensortag/board-i2c.h
+        arch/platform/srf06-cc26xx/sensortag/board-peripherals.h
+        arch/platform/srf06-cc26xx/sensortag/board.c
+        arch/platform/srf06-cc26xx/sensortag/buzzer.c
+        arch/platform/srf06-cc26xx/sensortag/buzzer.h
+        arch/platform/srf06-cc26xx/sensortag/hdc-1000-sensor.c
+        arch/platform/srf06-cc26xx/sensortag/hdc-1000-sensor.h
+        arch/platform/srf06-cc26xx/sensortag/mpu-9250-sensor.c
+        arch/platform/srf06-cc26xx/sensortag/mpu-9250-sensor.h
+        arch/platform/srf06-cc26xx/sensortag/opt-3001-sensor.c
+        arch/platform/srf06-cc26xx/sensortag/opt-3001-sensor.h
+        arch/platform/srf06-cc26xx/sensortag/sensor-common.c
+        arch/platform/srf06-cc26xx/sensortag/sensor-common.h
+        arch/platform/srf06-cc26xx/sensortag/sensortag-sensors.c
+        arch/platform/srf06-cc26xx/sensortag/tmp-007-sensor.c
+        arch/platform/srf06-cc26xx/sensortag/tmp-007-sensor.h
+        arch/platform/srf06-cc26xx/srf06/cc13xx/board.h
+        arch/platform/srf06-cc26xx/srf06/cc26xx/board.h
+        arch/platform/srf06-cc26xx/srf06/als-sensor.c
+        arch/platform/srf06-cc26xx/srf06/als-sensor.h
+        arch/platform/srf06-cc26xx/srf06/board-buttons.c
+        arch/platform/srf06-cc26xx/srf06/board-peripherals.h
+        arch/platform/srf06-cc26xx/srf06/board.c
+        arch/platform/srf06-cc26xx/srf06/leds-arch.c
+        arch/platform/srf06-cc26xx/srf06/srf06-sensors.c
+        arch/platform/srf06-cc26xx/cfs-coffee-arch.h
+        arch/platform/srf06-cc26xx/contiki-conf.h
+        arch/platform/srf06-cc26xx/platform.c
+        arch/platform/zoul/dev/ac-dimmer.c
+        arch/platform/zoul/dev/ac-dimmer.h
+        arch/platform/zoul/dev/adc-sensors.c
+        arch/platform/zoul/dev/adc-sensors.h
+        arch/platform/zoul/dev/adc-zoul.c
+        arch/platform/zoul/dev/adc-zoul.h
+        arch/platform/zoul/dev/antenna-sw.c
+        arch/platform/zoul/dev/antenna-sw.h
+        arch/platform/zoul/dev/bme280-arch.c
+        arch/platform/zoul/dev/bmpx8x.c
+        arch/platform/zoul/dev/bmpx8x.h
+        arch/platform/zoul/dev/board-buttons.c
+        arch/platform/zoul/dev/cc1200-zoul-arch.c
+        arch/platform/zoul/dev/dht22.c
+        arch/platform/zoul/dev/dht22.h
+        arch/platform/zoul/dev/grove-gyro.c
+        arch/platform/zoul/dev/grove-gyro.h
+        arch/platform/zoul/dev/iaq.c
+        arch/platform/zoul/dev/iaq.h
+        arch/platform/zoul/dev/led-strip.c
+        arch/platform/zoul/dev/led-strip.h
+        arch/platform/zoul/dev/leds-arch.c
+        arch/platform/zoul/dev/mmc-arch.c
+        arch/platform/zoul/dev/motion-sensor.c
+        arch/platform/zoul/dev/motion-sensor.h
+        arch/platform/zoul/dev/mp3-wtv020sd.c
+        arch/platform/zoul/dev/mp3-wtv020sd.h
+        arch/platform/zoul/dev/pm10-sensor.c
+        arch/platform/zoul/dev/pm10-sensor.h
+        arch/platform/zoul/dev/relay.c
+        arch/platform/zoul/dev/relay.h
+        arch/platform/zoul/dev/rgb-bl-lcd.c
+        arch/platform/zoul/dev/rgb-bl-lcd.h
+        arch/platform/zoul/dev/rtcc-config.h
+        arch/platform/zoul/dev/rtcc.c
+        arch/platform/zoul/dev/rtcc.h
+        arch/platform/zoul/dev/servo.c
+        arch/platform/zoul/dev/servo.h
+        arch/platform/zoul/dev/sht25.c
+        arch/platform/zoul/dev/sht25.h
+        arch/platform/zoul/dev/tmp102.c
+        arch/platform/zoul/dev/tmp102.h
+        arch/platform/zoul/dev/tsl256x.c
+        arch/platform/zoul/dev/tsl256x.h
+        arch/platform/zoul/dev/weather-meter.c
+        arch/platform/zoul/dev/weather-meter.h
+        arch/platform/zoul/dev/zonik.c
+        arch/platform/zoul/dev/zonik.h
+        arch/platform/zoul/dev/zoul-sensors.c
+        arch/platform/zoul/dev/zoul-sensors.h
+        arch/platform/zoul/firefly/board.c
+        arch/platform/zoul/firefly/board.h
+        arch/platform/zoul/firefly-reva/board.c
+        arch/platform/zoul/firefly-reva/board.h
+        arch/platform/zoul/fs/fat/diskio.c
+        arch/platform/zoul/fs/fat/ffconf.h
+        arch/platform/zoul/orion/board.c
+        arch/platform/zoul/orion/board.h
+        arch/platform/zoul/orion/enc28j60-arch-gpio.c
+        arch/platform/zoul/orion/enc28j60-arch-spi.c
+        arch/platform/zoul/orion/ip64-conf.h
+        arch/platform/zoul/remote-reva/board.c
+        arch/platform/zoul/remote-reva/board.h
+        arch/platform/zoul/remote-reva/power-mgmt.c
+        arch/platform/zoul/remote-reva/power-mgmt.h
+        arch/platform/zoul/remote-revb/board.c
+        arch/platform/zoul/remote-revb/board.h
+        arch/platform/zoul/remote-revb/power-mgmt.c
+        arch/platform/zoul/remote-revb/power-mgmt.h
+        arch/platform/zoul/contiki-conf.h
+        arch/platform/zoul/platform.c
+        examples/6tisch/6p-packet/project-conf.h
+        examples/6tisch/6p-packet/sixp-node.c
+        examples/6tisch/6p-packet/test-sf.c
+        examples/6tisch/etsi-plugtest-2017/node.c
+        examples/6tisch/etsi-plugtest-2017/project-conf.h
+        examples/6tisch/etsi-plugtest-2017/sf-plugtest.c
+        examples/6tisch/etsi-plugtest-2017/sf-plugtest.h
+        examples/6tisch/simple-node/node.c
+        examples/6tisch/simple-node/project-conf.h
+        examples/6tisch/sixtop/node-sixtop.c
+        examples/6tisch/sixtop/project-conf.h
+        examples/6tisch/sixtop/sf-simple.c
+        examples/6tisch/sixtop/sf-simple.h
+        examples/coap/coap-example-client/coap-example-client.c
+        examples/coap/coap-example-client/coap-example-observe-client.c
+        examples/coap/coap-example-client/project-conf.h
+        examples/coap/coap-example-server/resources/res-b1-sep-b2.c
+        examples/coap/coap-example-server/resources/res-battery.c
+        examples/coap/coap-example-server/resources/res-chunks.c
+        examples/coap/coap-example-server/resources/res-event.c
+        examples/coap/coap-example-server/resources/res-hello.c
+        examples/coap/coap-example-server/resources/res-leds.c
+        examples/coap/coap-example-server/resources/res-light.c
+        examples/coap/coap-example-server/resources/res-mirror.c
+        examples/coap/coap-example-server/resources/res-push.c
+        examples/coap/coap-example-server/resources/res-radio.c
+        examples/coap/coap-example-server/resources/res-separate.c
+        examples/coap/coap-example-server/resources/res-sht11.c
+        examples/coap/coap-example-server/resources/res-sub.c
+        examples/coap/coap-example-server/resources/res-temperature.c
+        examples/coap/coap-example-server/resources/res-toggle.c
+        examples/coap/coap-example-server/coap-example-server.c
+        examples/coap/coap-example-server/project-conf.h
+        examples/coap/coap-plugtest-server/resources/res-mirror.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-create1.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-create2.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-create3.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-large-create.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-large-update.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-large.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-links.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-locquery.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-longpath.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-multi.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-obs.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-path.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-query.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-separate.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-test.c
+        examples/coap/coap-plugtest-server/resources/res-plugtest-validate.c
+        examples/coap/coap-plugtest-server/coap-plugtest-server.c
+        examples/coap/coap-plugtest-server/project-conf.h
+        examples/dev/button-hal/button-hal-example.c
+        examples/dev/button-hal/project-conf.h
+        examples/dev/gpio-hal/cc2538dk/pins.c
+        examples/dev/gpio-hal/native/pins.c
+        examples/dev/gpio-hal/openmote-cc2538/pins.c
+        examples/dev/gpio-hal/srf06-cc26xx/pins.c
+        examples/dev/gpio-hal/zoul/pins.c
+        examples/dev/gpio-hal/gpio-hal-example.c
+        examples/dev/leds/leds-example.c
+        examples/dev/rgb-led/rgb-led-example.c
+        examples/hello-world/hello-world.c
+        examples/ip64-router/ip64-router.c
+        examples/ip64-router/project-conf.h
+        examples/libs/data-structures/data-structures.c
+        examples/libs/deployment/node.c
+        examples/libs/deployment/project-conf.h
+        examples/libs/energest/example-energest.c
+        examples/libs/energest/project-conf.h
+        examples/libs/ipv6-hooks/ipv6-hooks.c
+        examples/libs/ipv6-uipbuf/project-conf.h
+        examples/libs/ipv6-uipbuf/udp-client.c
+        examples/libs/ipv6-uipbuf/udp-server.c
+        examples/libs/logging/logging.c
+        examples/libs/logging/project-conf.h
+        examples/libs/shell/example.c
+        examples/libs/simple-energest/example.c
+        examples/libs/stack-check/example-stack-check.c
+        examples/libs/stack-check/project-conf.h
+        examples/libs/timers/all-timers.c
+        examples/libs/trickle-library/trickle-library.c
+        examples/lwm2m-ipso-objects/zoul/module-macros.h
+        examples/lwm2m-ipso-objects/example-ipso-objects.c
+        examples/lwm2m-ipso-objects/example-ipso-temperature.c
+        examples/lwm2m-ipso-objects/example-server.c
+        examples/lwm2m-ipso-objects/project-conf.h
+        examples/lwm2m-ipso-objects/serial-protocol.c
+        examples/lwm2m-ipso-objects/serial-protocol.h
+        examples/mqtt-client/arch/cpu/cc2538/builtin-sensors.c
+        examples/mqtt-client/arch/cpu/cc2538/builtin-sensors.h
+        examples/mqtt-client/arch/cpu/cc26xx-cc13xx/builtin-sensors.c
+        examples/mqtt-client/arch/cpu/cc26xx-cc13xx/builtin-sensors.h
+        examples/mqtt-client/arch/platform/cc2538dk/als-extend.c
+        examples/mqtt-client/arch/platform/cc2538dk/als-extend.h
+        examples/mqtt-client/arch/platform/cc2538dk/module-macros.h
+        examples/mqtt-client/arch/platform/cc2538dk/mqtt-client-extensions.c
+        examples/mqtt-client/arch/platform/openmote-cc2538/module-macros.h
+        examples/mqtt-client/arch/platform/openmote-cc2538/mqtt-client-extensions.c
+        examples/mqtt-client/arch/platform/srf06-cc26xx/module-macros.h
+        examples/mqtt-client/arch/platform/srf06-cc26xx/mqtt-client-extensions.c
+        examples/mqtt-client/arch/platform/zoul/module-macros.h
+        examples/mqtt-client/arch/platform/zoul/mqtt-client-extensions.c
+        examples/mqtt-client/mqtt-client.c
+        examples/mqtt-client/mqtt-client.h
+        examples/mqtt-client/project-conf.h
+        examples/multicast/srf06-cc26xx/module-macros.h
+        examples/multicast/zoul/module-macros.h
+        examples/multicast/intermediate.c
+        examples/multicast/project-conf.h
+        examples/multicast/root.c
+        examples/multicast/sink.c
+        examples/nullnet/nullnet-broadcast.c
+        examples/nullnet/nullnet-unicast.c
+        examples/platform-specific/cc2538-common/crypto/cbc-mac-test.c
+        examples/platform-specific/cc2538-common/crypto/cbc-test.c
+        examples/platform-specific/cc2538-common/crypto/ccm-test.c
+        examples/platform-specific/cc2538-common/crypto/ctr-test.c
+        examples/platform-specific/cc2538-common/crypto/ecb-test.c
+        examples/platform-specific/cc2538-common/crypto/gcm-test.c
+        examples/platform-specific/cc2538-common/crypto/sha256-test.c
+        examples/platform-specific/cc2538-common/pka/ecc-ecdh.c
+        examples/platform-specific/cc2538-common/pka/ecc-sign.c
+        examples/platform-specific/cc2538-common/pka/ecc-verify.c
+        examples/platform-specific/cc2538-common/test-pwm.c
+        examples/platform-specific/cc2538-common/test-uart.c
+        examples/platform-specific/cc2538-common/timer-test.c
+        examples/platform-specific/cc26xx/ble-ipv6/client.c
+        examples/platform-specific/cc26xx/ble-ipv6/project-conf.h
+        examples/platform-specific/cc26xx/cc26xx-web-demo/resources/res-ble-advd.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/resources/res-device.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/resources/res-leds.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/resources/res-net.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/resources/res-sensors.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/resources/res-toggle-leds.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/cc26xx-web-demo.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/cc26xx-web-demo.h
+        examples/platform-specific/cc26xx/cc26xx-web-demo/cetic-6lbr-client.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/coap-server.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/coap-server.h
+        examples/platform-specific/cc26xx/cc26xx-web-demo/httpd-simple.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/httpd-simple.h
+        examples/platform-specific/cc26xx/cc26xx-web-demo/mqtt-client.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/mqtt-client.h
+        examples/platform-specific/cc26xx/cc26xx-web-demo/net-uart.c
+        examples/platform-specific/cc26xx/cc26xx-web-demo/net-uart.h
+        examples/platform-specific/cc26xx/cc26xx-web-demo/project-conf.h
+        examples/platform-specific/cc26xx/very-sleepy-demo/project-conf.h
+        examples/platform-specific/cc26xx/very-sleepy-demo/very-sleepy-demo.c
+        examples/platform-specific/cc26xx/cc26xx-demo.c
+        examples/platform-specific/cc26xx/project-conf.h
+        examples/platform-specific/jn516x/dr1175-sensors/node.c
+        examples/platform-specific/jn516x/rpl/coap-dongle-node/dongle-node.c
+        examples/platform-specific/jn516x/rpl/coap-dongle-node/project-conf.h
+        examples/platform-specific/jn516x/rpl/coap-dr1175-node/dr1175-node.c
+        examples/platform-specific/jn516x/rpl/coap-dr1175-node/project-conf.h
+        examples/platform-specific/jn516x/rpl/coap-dr1199-node/dr1199-node.c
+        examples/platform-specific/jn516x/rpl/coap-dr1199-node/project-conf.h
+        examples/platform-specific/jn516x/rpl/node/node.c
+        examples/platform-specific/jn516x/rpl/node/project-conf.h
+        examples/platform-specific/jn516x/rpl/common-conf.h
+        examples/platform-specific/jn516x/tsch/simple-sensor-network/node/node.c
+        examples/platform-specific/jn516x/tsch/simple-sensor-network/node/project-conf.h
+        examples/platform-specific/jn516x/tsch/simple-sensor-network/node/waveform.h
+        examples/platform-specific/jn516x/tsch/tx-power-verification/node/node.c
+        examples/platform-specific/jn516x/tsch/tx-power-verification/node/project-conf.h
+        examples/platform-specific/jn516x/tsch/uart1-test-node/project-conf.h
+        examples/platform-specific/jn516x/tsch/uart1-test-node/uart1-test-node.c
+        examples/platform-specific/jn516x/tsch/common-conf-jn516x.h
+        examples/platform-specific/jn516x/tsch/common-conf.h
+        examples/platform-specific/nrf52dk/blink-hello/blink-hello.c
+        examples/platform-specific/nrf52dk/coap-demo/coap-client/coap-client.c
+        examples/platform-specific/nrf52dk/coap-demo/coap-server/coap-server.c
+        examples/platform-specific/nrf52dk/coap-demo/resources/res-leds.c
+        examples/platform-specific/nrf52dk/coap-demo/project-conf.h
+        examples/platform-specific/nrf52dk/mqtt-demo/mqtt-demo.c
+        examples/platform-specific/nrf52dk/mqtt-demo/project-conf.h
+        examples/platform-specific/nrf52dk/timer-test/timer-test.c
+        examples/platform-specific/zoul/at-test/at-master-test.c
+        examples/platform-specific/zoul/at-test/project-conf.h
+        examples/platform-specific/zoul/orion/client/client.c
+        examples/platform-specific/zoul/orion/client/ifttt-client.c
+        examples/platform-specific/zoul/orion/client/project-conf.h
+        examples/platform-specific/zoul/orion/ip64-router/httpd-simple.c
+        examples/platform-specific/zoul/orion/ip64-router/httpd-simple.h
+        examples/platform-specific/zoul/orion/ip64-router/ip64-router.c
+        examples/platform-specific/zoul/orion/ip64-router/project-conf.h
+        examples/platform-specific/zoul/rev-b/project-conf.h
+        examples/platform-specific/zoul/rev-b/test-power-mgmt.c
+        examples/platform-specific/zoul/rtcc/project-conf.h
+        examples/platform-specific/zoul/rtcc/test-rtcc.c
+        examples/platform-specific/zoul/project-conf.h
+        examples/platform-specific/zoul/test-aac-sensor.c
+        examples/platform-specific/zoul/test-ac-dimmer.c
+        examples/platform-specific/zoul/test-bme280.c
+        examples/platform-specific/zoul/test-bmp085-bmp180.c
+        examples/platform-specific/zoul/test-dht22.c
+        examples/platform-specific/zoul/test-grove-gyro.c
+        examples/platform-specific/zoul/test-grove-light-sensor.c
+        examples/platform-specific/zoul/test-grove-loudness-sensor.c
+        examples/platform-specific/zoul/test-iaq.c
+        examples/platform-specific/zoul/test-lcd.c
+        examples/platform-specific/zoul/test-motion.c
+        examples/platform-specific/zoul/test-pm10-sensor.c
+        examples/platform-specific/zoul/test-relay.c
+        examples/platform-specific/zoul/test-rotation-sensor.c
+        examples/platform-specific/zoul/test-servo.c
+        examples/platform-specific/zoul/test-sht25.c
+        examples/platform-specific/zoul/test-tsl256x.c
+        examples/platform-specific/zoul/test-vac-sensor.c
+        examples/platform-specific/zoul/test-weather-meter.c
+        examples/platform-specific/zoul/test-zonik.c
+        examples/rpl-border-router/sky/module-macros.h
+        examples/rpl-border-router/webserver/httpd-simple.c
+        examples/rpl-border-router/webserver/httpd-simple.h
+        examples/rpl-border-router/webserver/webserver.c
+        examples/rpl-border-router/border-router.c
+        examples/rpl-border-router/project-conf.h
+        examples/rpl-udp/udp-client.c
+        examples/rpl-udp/udp-server.c
+        examples/sensniff/cc2538dk/target-conf.h
+        examples/sensniff/jn516x/jn516x-io.h
+        examples/sensniff/jn516x/target-conf.h
+        examples/sensniff/openmote-cc2538/target-conf.h
+        examples/sensniff/pool/cc13xx-cc26xx-io.h
+        examples/sensniff/pool/cc2530-cc2531-io.h
+        examples/sensniff/pool/cc2538-io.h
+        examples/sensniff/pool/msp430-io.h
+        examples/sensniff/srf06-cc26xx/target-conf.h
+        examples/sensniff/zoul/target-conf.h
+        examples/sensniff/project-conf.h
+        examples/sensniff/sensniff-mac.c
+        examples/sensniff/sensniff.c
+        examples/sensniff/sensniff.h
+        examples/slip-radio/sky/module-macros.h
+        examples/slip-radio/sky/slip-radio-putchar.c
+        examples/slip-radio/project-conf.h
+        examples/slip-radio/slip-net.c
+        examples/slip-radio/slip-radio.c
+        examples/slip-radio/slip-radio.h
+        examples/storage/antelope-shell/shell-db.c
+        examples/storage/cfs-coffee/example-coffee.c
+        examples/storage/cfs-coffee/project-conf.h
+        examples/storage/cfs-coffee/test-cfs.c
+        examples/storage/cfs-coffee/test-coffee.c
+        examples/storage/eeprom-test/eeprom-test.c
+        examples/websocket/http-example.c
+        examples/websocket/project-conf.h
+        examples/websocket/websocket-example.c
+        os/dev/battery-sensor.h
+        os/dev/ble-hal.h
+        os/dev/button-hal.c
+        os/dev/button-hal.h
+        os/dev/button-sensor.h
+        os/dev/eeprom.h
+        os/dev/gpio-hal.c
+        os/dev/gpio-hal.h
+        os/dev/leds.c
+        os/dev/leds.h
+        os/dev/nullradio.c
+        os/dev/nullradio.h
+        os/dev/radio.h
+        os/dev/rom.h
+        os/dev/serial-line.c
+        os/dev/serial-line.h
+        os/dev/slip.c
+        os/dev/slip.h
+        os/dev/spi-legacy.h
+        os/dev/spi.c
+        os/dev/spi.h
+        os/dev/watchdog.h
+        os/dev/xmem.h
+        os/lib/dbg-io/dbg.h
+        os/lib/dbg-io/printf.c
+        os/lib/dbg-io/putchar.c
+        os/lib/dbg-io/puts.c
+        os/lib/dbg-io/snprintf.c
+        os/lib/dbg-io/sprintf.c
+        os/lib/dbg-io/strformat.c
+        os/lib/dbg-io/strformat.h
+        os/lib/fs/fat/option/unicode/cc932.c
+        os/lib/fs/fat/option/unicode/cc936.c
+        os/lib/fs/fat/option/unicode/cc949.c
+        os/lib/fs/fat/option/unicode/cc950.c
+        os/lib/fs/fat/option/unicode/ccsbcs.c
+        os/lib/fs/fat/option/syscall.c
+        os/lib/fs/fat/option/unicode.c
+        os/lib/fs/fat/diskio.h
+        os/lib/fs/fat/ff.c
+        os/lib/fs/fat/ff.h
+        os/lib/fs/fat/integer.h
+        os/lib/json/json.h
+        os/lib/json/jsonparse.c
+        os/lib/json/jsonparse.h
+        os/lib/json/jsontree.c
+        os/lib/json/jsontree.h
+        os/lib/newlib/syscalls.c
+        os/lib/strncasecmp/strncasecmp.c
+        os/lib/aes-128.c
+        os/lib/aes-128.h
+        os/lib/assert.c
+        os/lib/assert.h
+        os/lib/ccm-star.c
+        os/lib/ccm-star.h
+        os/lib/circular-list.c
+        os/lib/circular-list.h
+        os/lib/crc16.c
+        os/lib/crc16.h
+        os/lib/dbl-circ-list.c
+        os/lib/dbl-circ-list.h
+        os/lib/dbl-list.c
+        os/lib/dbl-list.h
+        os/lib/heapmem.c
+        os/lib/heapmem.h
+        os/lib/ifft.c
+        os/lib/ifft.h
+        os/lib/list.c
+        os/lib/list.h
+        os/lib/memb.c
+        os/lib/memb.h
+        os/lib/queue.h
+        os/lib/random.c
+        os/lib/random.h
+        os/lib/ringbuf.c
+        os/lib/ringbuf.h
+        os/lib/ringbufindex.c
+        os/lib/ringbufindex.h
+        os/lib/sensors.c
+        os/lib/sensors.h
+        os/lib/stack.h
+        os/lib/trickle-timer.c
+        os/lib/trickle-timer.h
+        os/net/app-layer/coap/tinydtls-support/dtls-support-conf.h
+        os/net/app-layer/coap/tinydtls-support/dtls-support.c
+        os/net/app-layer/coap/coap-block1.c
+        os/net/app-layer/coap/coap-block1.h
+        os/net/app-layer/coap/coap-blocking-api.c
+        os/net/app-layer/coap/coap-blocking-api.h
+        os/net/app-layer/coap/coap-callback-api.c
+        os/net/app-layer/coap/coap-callback-api.h
+        os/net/app-layer/coap/coap-conf.h
+        os/net/app-layer/coap/coap-constants.h
+        os/net/app-layer/coap/coap-endpoint.h
+        os/net/app-layer/coap/coap-engine.c
+        os/net/app-layer/coap/coap-engine.h
+        os/net/app-layer/coap/coap-keystore-simple.c
+        os/net/app-layer/coap/coap-keystore-simple.h
+        os/net/app-layer/coap/coap-keystore.h
+        os/net/app-layer/coap/coap-log.c
+        os/net/app-layer/coap/coap-log.h
+        os/net/app-layer/coap/coap-observe-client.c
+        os/net/app-layer/coap/coap-observe-client.h
+        os/net/app-layer/coap/coap-observe.c
+        os/net/app-layer/coap/coap-observe.h
+        os/net/app-layer/coap/coap-request-state.h
+        os/net/app-layer/coap/coap-res-well-known-core.c
+        os/net/app-layer/coap/coap-separate.c
+        os/net/app-layer/coap/coap-separate.h
+        os/net/app-layer/coap/coap-timer-default.c
+        os/net/app-layer/coap/coap-timer.c
+        os/net/app-layer/coap/coap-timer.h
+        os/net/app-layer/coap/coap-transactions.c
+        os/net/app-layer/coap/coap-transactions.h
+        os/net/app-layer/coap/coap-transport.h
+        os/net/app-layer/coap/coap-uip.c
+        os/net/app-layer/coap/coap.c
+        os/net/app-layer/coap/coap.h
+        os/net/app-layer/coap/module-macros.h
+        os/net/app-layer/http-socket/http-socket.c
+        os/net/app-layer/http-socket/http-socket.h
+        os/net/app-layer/http-socket/websocket-http-client.c
+        os/net/app-layer/http-socket/websocket-http-client.h
+        os/net/app-layer/http-socket/websocket.c
+        os/net/app-layer/http-socket/websocket.h
+        os/net/app-layer/httpd-ws/httpd-ws.c
+        os/net/app-layer/httpd-ws/httpd-ws.h
+        os/net/app-layer/mqtt/mqtt.c
+        os/net/app-layer/mqtt/mqtt.h
+        os/net/ipv6/multicast/esmrf.c
+        os/net/ipv6/multicast/esmrf.h
+        os/net/ipv6/multicast/roll-tm.c
+        os/net/ipv6/multicast/roll-tm.h
+        os/net/ipv6/multicast/smrf.c
+        os/net/ipv6/multicast/smrf.h
+        os/net/ipv6/multicast/uip-mcast6-engines.h
+        os/net/ipv6/multicast/uip-mcast6-route.c
+        os/net/ipv6/multicast/uip-mcast6-route.h
+        os/net/ipv6/multicast/uip-mcast6-stats.c
+        os/net/ipv6/multicast/uip-mcast6-stats.h
+        os/net/ipv6/multicast/uip-mcast6.h
+        os/net/ipv6/ip64-addr.c
+        os/net/ipv6/ip64-addr.h
+        os/net/ipv6/psock.c
+        os/net/ipv6/psock.h
+        os/net/ipv6/resolv.c
+        os/net/ipv6/resolv.h
+        os/net/ipv6/sicslowpan.c
+        os/net/ipv6/sicslowpan.h
+        os/net/ipv6/simple-udp.c
+        os/net/ipv6/simple-udp.h
+        os/net/ipv6/tcp-socket.c
+        os/net/ipv6/tcp-socket.h
+        os/net/ipv6/tcpip.c
+        os/net/ipv6/tcpip.h
+        os/net/ipv6/udp-socket.c
+        os/net/ipv6/udp-socket.h
+        os/net/ipv6/uip-arch.h
+        os/net/ipv6/uip-debug.h
+        os/net/ipv6/uip-ds6-nbr.c
+        os/net/ipv6/uip-ds6-nbr.h
+        os/net/ipv6/uip-ds6-route.c
+        os/net/ipv6/uip-ds6-route.h
+        os/net/ipv6/uip-ds6.c
+        os/net/ipv6/uip-ds6.h
+        os/net/ipv6/uip-icmp6.c
+        os/net/ipv6/uip-icmp6.h
+        os/net/ipv6/uip-nameserver.c
+        os/net/ipv6/uip-nameserver.h
+        os/net/ipv6/uip-nd6.c
+        os/net/ipv6/uip-nd6.h
+        os/net/ipv6/uip-packetqueue.c
+        os/net/ipv6/uip-packetqueue.h
+        os/net/ipv6/uip-sr.c
+        os/net/ipv6/uip-sr.h
+        os/net/ipv6/uip-udp-packet.c
+        os/net/ipv6/uip-udp-packet.h
+        os/net/ipv6/uip.h
+        os/net/ipv6/uip6.c
+        os/net/ipv6/uipbuf.c
+        os/net/ipv6/uipbuf.h
+        os/net/ipv6/uiplib.c
+        os/net/ipv6/uiplib.h
+        os/net/ipv6/uipopt.h
+        os/net/mac/ble/ble-l2cap.c
+        os/net/mac/ble/ble-l2cap.h
+        os/net/mac/csma/csma-output.c
+        os/net/mac/csma/csma-output.h
+        os/net/mac/csma/csma.c
+        os/net/mac/csma/csma.h
+        os/net/mac/framer/frame802154.c
+        os/net/mac/framer/frame802154.h
+        os/net/mac/framer/frame802154e-ie.c
+        os/net/mac/framer/frame802154e-ie.h
+        os/net/mac/framer/framer-802154.c
+        os/net/mac/framer/framer-802154.h
+        os/net/mac/framer/framer.h
+        os/net/mac/framer/nullframer.c
+        os/net/mac/nullmac/nullmac.c
+        os/net/mac/nullmac/nullmac.h
+        os/net/mac/tsch/sixtop/sixp-nbr.c
+        os/net/mac/tsch/sixtop/sixp-nbr.h
+        os/net/mac/tsch/sixtop/sixp-pkt.c
+        os/net/mac/tsch/sixtop/sixp-pkt.h
+        os/net/mac/tsch/sixtop/sixp-trans.c
+        os/net/mac/tsch/sixtop/sixp-trans.h
+        os/net/mac/tsch/sixtop/sixp.c
+        os/net/mac/tsch/sixtop/sixp.h
+        os/net/mac/tsch/sixtop/sixtop-conf.h
+        os/net/mac/tsch/sixtop/sixtop.c
+        os/net/mac/tsch/sixtop/sixtop.h
+        os/net/mac/tsch/tsch-adaptive-timesync.c
+        os/net/mac/tsch/tsch-adaptive-timesync.h
+        os/net/mac/tsch/tsch-asn.h
+        os/net/mac/tsch/tsch-conf.h
+        os/net/mac/tsch/tsch-const.h
+        os/net/mac/tsch/tsch-log.c
+        os/net/mac/tsch/tsch-log.h
+        os/net/mac/tsch/tsch-packet.c
+        os/net/mac/tsch/tsch-packet.h
+        os/net/mac/tsch/tsch-queue.c
+        os/net/mac/tsch/tsch-queue.h
+        os/net/mac/tsch/tsch-rpl.c
+        os/net/mac/tsch/tsch-rpl.h
+        os/net/mac/tsch/tsch-schedule.c
+        os/net/mac/tsch/tsch-schedule.h
+        os/net/mac/tsch/tsch-security.c
+        os/net/mac/tsch/tsch-security.h
+        os/net/mac/tsch/tsch-slot-operation.c
+        os/net/mac/tsch/tsch-slot-operation.h
+        os/net/mac/tsch/tsch-types.h
+        os/net/mac/tsch/tsch.c
+        os/net/mac/tsch/tsch.h
+        os/net/mac/llsec802154.h
+        os/net/mac/mac-sequence.c
+        os/net/mac/mac-sequence.h
+        os/net/mac/mac.c
+        os/net/mac/mac.h
+        os/net/nullnet/nullnet.c
+        os/net/nullnet/nullnet.h
+        os/net/routing/nullrouting/nullrouting.c
+        os/net/routing/rpl-classic/rpl-conf.h
+        os/net/routing/rpl-classic/rpl-dag-root.c
+        os/net/routing/rpl-classic/rpl-dag-root.h
+        os/net/routing/rpl-classic/rpl-dag.c
+        os/net/routing/rpl-classic/rpl-ext-header.c
+        os/net/routing/rpl-classic/rpl-icmp6.c
+        os/net/routing/rpl-classic/rpl-mrhof.c
+        os/net/routing/rpl-classic/rpl-nbr-policy.c
+        os/net/routing/rpl-classic/rpl-of0.c
+        os/net/routing/rpl-classic/rpl-private.h
+        os/net/routing/rpl-classic/rpl-timers.c
+        os/net/routing/rpl-classic/rpl.c
+        os/net/routing/rpl-classic/rpl.h
+        os/net/routing/rpl-lite/rpl-conf.h
+        os/net/routing/rpl-lite/rpl-const.h
+        os/net/routing/rpl-lite/rpl-dag-root.c
+        os/net/routing/rpl-lite/rpl-dag-root.h
+        os/net/routing/rpl-lite/rpl-dag.c
+        os/net/routing/rpl-lite/rpl-dag.h
+        os/net/routing/rpl-lite/rpl-ext-header.c
+        os/net/routing/rpl-lite/rpl-ext-header.h
+        os/net/routing/rpl-lite/rpl-icmp6.c
+        os/net/routing/rpl-lite/rpl-icmp6.h
+        os/net/routing/rpl-lite/rpl-mrhof.c
+        os/net/routing/rpl-lite/rpl-nbr-policy.c
+        os/net/routing/rpl-lite/rpl-neighbor.c
+        os/net/routing/rpl-lite/rpl-neighbor.h
+        os/net/routing/rpl-lite/rpl-of0.c
+        os/net/routing/rpl-lite/rpl-timers.c
+        os/net/routing/rpl-lite/rpl-timers.h
+        os/net/routing/rpl-lite/rpl-types.h
+        os/net/routing/rpl-lite/rpl.c
+        os/net/routing/rpl-lite/rpl.h
+        os/net/routing/routing.h
+        os/net/security/tinydtls/aes/rijndael.c
+        os/net/security/tinydtls/aes/rijndael.h
+        os/net/security/tinydtls/contiki-support/dtls-support-conf.h
+        os/net/security/tinydtls/contiki-support/dtls-support.c
+        os/net/security/tinydtls/ecc/tests/test_helper.c
+        os/net/security/tinydtls/ecc/tests/test_helper.h
+        os/net/security/tinydtls/ecc/tests/testecc.c
+        os/net/security/tinydtls/ecc/tests/testfield.c
+        os/net/security/tinydtls/ecc/ecc.c
+        os/net/security/tinydtls/ecc/ecc.h
+        os/net/security/tinydtls/posix/lib/memb.h
+        os/net/security/tinydtls/posix/dtls-support-conf.h
+        os/net/security/tinydtls/posix/dtls-support.c
+        os/net/security/tinydtls/sha2/tests/sha2prog.c
+        os/net/security/tinydtls/sha2/tests/sha2speed.c
+        os/net/security/tinydtls/sha2/sha2.c
+        os/net/security/tinydtls/sha2/sha2.h
+        os/net/security/tinydtls/tests/cbc_aes128-test.c
+        os/net/security/tinydtls/tests/cbc_aes128-testdata.c
+        os/net/security/tinydtls/tests/ccm-test.c
+        os/net/security/tinydtls/tests/ccm-testdata.c
+        os/net/security/tinydtls/tests/dsrv-test.c
+        os/net/security/tinydtls/tests/dtls-client.c
+        os/net/security/tinydtls/tests/dtls-server.c
+        os/net/security/tinydtls/tests/netq-test.c
+        os/net/security/tinydtls/tests/pcap.c
+        os/net/security/tinydtls/tests/prf-test.c
+        os/net/security/tinydtls/tests/secure-server.c
+        os/net/security/tinydtls/dtls-alert.h
+        os/net/security/tinydtls/dtls-ccm.c
+        os/net/security/tinydtls/dtls-ccm.h
+        os/net/security/tinydtls/dtls-crypto.c
+        os/net/security/tinydtls/dtls-crypto.h
+        os/net/security/tinydtls/dtls-hmac.c
+        os/net/security/tinydtls/dtls-hmac.h
+        os/net/security/tinydtls/dtls-log-default.h
+        os/net/security/tinydtls/dtls-log.c
+        os/net/security/tinydtls/dtls-log.h
+        os/net/security/tinydtls/dtls-numeric.h
+        os/net/security/tinydtls/dtls-peer.c
+        os/net/security/tinydtls/dtls-peer.h
+        os/net/security/tinydtls/dtls-state.h
+        os/net/security/tinydtls/dtls-support.h
+        os/net/security/tinydtls/dtls.c
+        os/net/security/tinydtls/dtls.h
+        os/net/security/tinydtls/dtls_config.h
+        os/net/security/tinydtls/netq.c
+        os/net/security/tinydtls/netq.h
+        os/net/security/tinydtls/tinydtls.h
+        os/net/link-stats.c
+        os/net/link-stats.h
+        os/net/linkaddr.c
+        os/net/linkaddr.h
+        os/net/nbr-table.c
+        os/net/nbr-table.h
+        os/net/net-debug.c
+        os/net/net-debug.h
+        os/net/netstack.c
+        os/net/netstack.h
+        os/net/packetbuf.c
+        os/net/packetbuf.h
+        os/net/queuebuf.c
+        os/net/queuebuf.h
+        os/services/at-master/at-master.c
+        os/services/at-master/at-master.h
+        os/services/deployment/deployment.c
+        os/services/deployment/deployment.h
+        os/services/deployment/module-macros.h
+        os/services/ip64/ip64-addrmap.c
+        os/services/ip64/ip64-addrmap.h
+        os/services/ip64/ip64-arp.c
+        os/services/ip64/ip64-arp.h
+        os/services/ip64/ip64-conf-example.h
+        os/services/ip64/ip64-dhcpc.c
+        os/services/ip64/ip64-dhcpc.h
+        os/services/ip64/ip64-dns64.c
+        os/services/ip64/ip64-dns64.h
+        os/services/ip64/ip64-driver.h
+        os/services/ip64/ip64-eth-interface.c
+        os/services/ip64/ip64-eth-interface.h
+        os/services/ip64/ip64-eth.c
+        os/services/ip64/ip64-eth.h
+        os/services/ip64/ip64-interface.h
+        os/services/ip64/ip64-ipv4-dhcp.c
+        os/services/ip64/ip64-ipv4-dhcp.h
+        os/services/ip64/ip64-null-driver.c
+        os/services/ip64/ip64-null-driver.h
+        os/services/ip64/ip64-slip-interface.c
+        os/services/ip64/ip64-slip-interface.h
+        os/services/ip64/ip64-special-ports.c
+        os/services/ip64/ip64-special-ports.h
+        os/services/ip64/ip64.c
+        os/services/ip64/ip64.h
+        os/services/ipso-objects/ipso-blockwise-test.c
+        os/services/ipso-objects/ipso-button.c
+        os/services/ipso-objects/ipso-control-template.c
+        os/services/ipso-objects/ipso-control-template.h
+        os/services/ipso-objects/ipso-leds-control.c
+        os/services/ipso-objects/ipso-light-control.c
+        os/services/ipso-objects/ipso-objects.c
+        os/services/ipso-objects/ipso-objects.h
+        os/services/ipso-objects/ipso-sensor-template.c
+        os/services/ipso-objects/ipso-sensor-template.h
+        os/services/ipso-objects/ipso-temperature.c
+        os/services/lwm2m/lwm2m-device.c
+        os/services/lwm2m/lwm2m-device.h
+        os/services/lwm2m/lwm2m-engine.c
+        os/services/lwm2m/lwm2m-engine.h
+        os/services/lwm2m/lwm2m-firmware.c
+        os/services/lwm2m/lwm2m-firmware.h
+        os/services/lwm2m/lwm2m-json.c
+        os/services/lwm2m/lwm2m-json.h
+        os/services/lwm2m/lwm2m-notification-queue.c
+        os/services/lwm2m/lwm2m-notification-queue.h
+        os/services/lwm2m/lwm2m-object.h
+        os/services/lwm2m/lwm2m-plain-text.c
+        os/services/lwm2m/lwm2m-plain-text.h
+        os/services/lwm2m/lwm2m-queue-mode-conf.h
+        os/services/lwm2m/lwm2m-queue-mode-object.c
+        os/services/lwm2m/lwm2m-queue-mode-object.h
+        os/services/lwm2m/lwm2m-queue-mode.c
+        os/services/lwm2m/lwm2m-queue-mode.h
+        os/services/lwm2m/lwm2m-rd-client.c
+        os/services/lwm2m/lwm2m-rd-client.h
+        os/services/lwm2m/lwm2m-security.c
+        os/services/lwm2m/lwm2m-security.h
+        os/services/lwm2m/lwm2m-server.c
+        os/services/lwm2m/lwm2m-server.h
+        os/services/lwm2m/lwm2m-tlv-reader.c
+        os/services/lwm2m/lwm2m-tlv-reader.h
+        os/services/lwm2m/lwm2m-tlv-writer.c
+        os/services/lwm2m/lwm2m-tlv-writer.h
+        os/services/lwm2m/lwm2m-tlv.c
+        os/services/lwm2m/lwm2m-tlv.h
+        os/services/orchestra/orchestra-conf.h
+        os/services/orchestra/orchestra-rule-default-common.c
+        os/services/orchestra/orchestra-rule-eb-per-time-source.c
+        os/services/orchestra/orchestra-rule-unicast-per-neighbor-rpl-ns.c
+        os/services/orchestra/orchestra-rule-unicast-per-neighbor-rpl-storing.c
+        os/services/orchestra/orchestra.c
+        os/services/orchestra/orchestra.h
+        os/services/rpl-border-router/embedded/border-router-embedded.c
+        os/services/rpl-border-router/embedded/slip-bridge.c
+        os/services/rpl-border-router/native/border-router-cmds.c
+        os/services/rpl-border-router/native/border-router-cmds.h
+        os/services/rpl-border-router/native/border-router-mac.c
+        os/services/rpl-border-router/native/border-router-native.c
+        os/services/rpl-border-router/native/border-router.h
+        os/services/rpl-border-router/native/module-macros.h
+        os/services/rpl-border-router/native/slip-config.c
+        os/services/rpl-border-router/native/slip-dev.c
+        os/services/rpl-border-router/native/tun-bridge.c
+        os/services/rpl-border-router/module-macros.h
+        os/services/rpl-border-router/rpl-border-router.c
+        os/services/rpl-border-router/rpl-border-router.h
+        os/services/shell/serial-shell.c
+        os/services/shell/serial-shell.h
+        os/services/shell/shell-commands.c
+        os/services/shell/shell-commands.h
+        os/services/shell/shell.c
+        os/services/shell/shell.h
+        os/services/simple-energest/module-macros.h
+        os/services/simple-energest/simple-energest.c
+        os/services/simple-energest/simple-energest.h
+        os/services/slip-cmd/cmd.c
+        os/services/slip-cmd/cmd.h
+        os/services/slip-cmd/packetutils.c
+        os/services/slip-cmd/packetutils.h
+        os/services/tpwsn-neighbour-discovery/neighbour-discovery.c
+        os/services/tpwsn-neighbour-discovery/neighbour-discovery.h
+        os/services/unit-test/example-test.c
+        os/services/unit-test/unit-test.c
+        os/services/unit-test/unit-test.h
+        os/storage/antelope/antelope.c
+        os/storage/antelope/antelope.h
+        os/storage/antelope/aql-adt.c
+        os/storage/antelope/aql-exec.c
+        os/storage/antelope/aql-lexer.c
+        os/storage/antelope/aql-parser.c
+        os/storage/antelope/aql.h
+        os/storage/antelope/attribute.h
+        os/storage/antelope/db-options.h
+        os/storage/antelope/db-types.h
+        os/storage/antelope/debug.h
+        os/storage/antelope/index-inline.c
+        os/storage/antelope/index-maxheap.c
+        os/storage/antelope/index-memhash.c
+        os/storage/antelope/index.c
+        os/storage/antelope/index.h
+        os/storage/antelope/lvm.c
+        os/storage/antelope/lvm.h
+        os/storage/antelope/relation.c
+        os/storage/antelope/relation.h
+        os/storage/antelope/result.c
+        os/storage/antelope/result.h
+        os/storage/antelope/storage-cfs.c
+        os/storage/antelope/storage.h
+        os/storage/cfs/cfs-coffee.c
+        os/storage/cfs/cfs-coffee.h
+        os/storage/cfs/cfs.h
+        os/sys/autostart.c
+        os/sys/autostart.h
+        os/sys/cc-gcc.h
+        os/sys/cc.h
+        os/sys/clock.h
+        os/sys/compower.c
+        os/sys/compower.h
+        os/sys/critical.h
+        os/sys/ctimer.c
+        os/sys/ctimer.h
+        os/sys/energest.c
+        os/sys/energest.h
+        os/sys/etimer.c
+        os/sys/etimer.h
+        os/sys/int-master.h
+        os/sys/lc-addrlabels.h
+        os/sys/lc-switch.h
+        os/sys/lc.h
+        os/sys/log-conf.h
+        os/sys/log.c
+        os/sys/log.h
+        os/sys/memory-barrier.h
+        os/sys/mutex.c
+        os/sys/mutex.h
+        os/sys/node-id.c
+        os/sys/node-id.h
+        os/sys/platform.h
+        os/sys/process.c
+        os/sys/process.h
+        os/sys/pt-sem.h
+        os/sys/pt.h
+        os/sys/rtimer.c
+        os/sys/rtimer.h
+        os/sys/stack-check.c
+        os/sys/stack-check.h
+        os/sys/stimer.c
+        os/sys/stimer.h
+        os/sys/subprocess.h
+        os/sys/timer.c
+        os/sys/timer.h
+        os/contiki-default-conf.h
+        os/contiki-lib.h
+        os/contiki-main.c
+        os/contiki-net.h
+        os/contiki.h
+        tests/07-simulation-base/code-data-structures/project-conf.h
+        tests/07-simulation-base/code-data-structures/test-data-structures.c
+        tests/07-simulation-base/code-ipv6/receiver/project-conf.h
+        tests/07-simulation-base/code-ipv6/receiver/udp-receiver.c
+        tests/07-simulation-base/code-ipv6/sender/project-conf.h
+        tests/07-simulation-base/code-ipv6/sender/udp-sender.c
+        tests/07-simulation-base/code-ipv6/sender/unicast-sender.c
+        tests/07-simulation-base/code-ringbufindex/project-conf.h
+        tests/07-simulation-base/code-ringbufindex/test-ringbufindex.c
+        tests/07-simulation-base/code-slip-radio/project-conf.h
+        tests/07-simulation-base/code-slip-radio/wait-dag.c
+        tests/09-ipv6/code/node.c
+        tests/13-ieee802154/code-6tisch/common.c
+        tests/13-ieee802154/code-6tisch/common.h
+        tests/13-ieee802154/code-6tisch/project-conf.h
+        tests/13-ieee802154/code-6tisch/test-sixp-nbr.c
+        tests/13-ieee802154/code-6tisch/test-sixp-pkt.c
+        tests/13-ieee802154/code-6tisch/test-sixp-trans.c
+        tests/13-ieee802154/code-6tisch/test-sixp.c
+        tests/13-ieee802154/code-6tisch/test-sixtop.c
+        tests/13-ieee802154/code-flush-nbr-queue/common.c
+        tests/13-ieee802154/code-flush-nbr-queue/common.h
+        tests/13-ieee802154/code-flush-nbr-queue/project-conf.h
+        tests/13-ieee802154/code-flush-nbr-queue/test-flush-nbr-queue.c
+        tests/13-ieee802154/code-panid-handling/project-conf.h
+        tests/13-ieee802154/code-panid-handling/project-tsch-conf.h
+        tests/13-ieee802154/code-panid-handling/test-panid-handling.c
+        tests/14-rpl-lite/code/project-conf.h
+        tests/14-rpl-lite/code/receiver-node.c
+        tests/14-rpl-lite/code/root-node.c
+        tests/14-rpl-lite/code/sender-node.c
+        tests/15-rpl-classic/code/project-conf.h
+        tests/15-rpl-classic/code/receiver-node.c
+        tests/15-rpl-classic/code/root-node.c
+        tests/15-rpl-classic/code/sender-node.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-hex/coap-hex.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-hex/coap-hex.h
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-ipv4/coap-ipv4.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-ipv4/coap-ipv4.h
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/tinydtls-support/dtls-support-conf.h
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/tinydtls-support/dtls-support.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/coap-log-conf.h
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/contiki.h
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/generic-object-test.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/ipso-control-test.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/ipso-sensor-temp.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/lwm2m-example.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/posix-coap-timer.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/posix-main.c
+        tests/18-coap-lwm2m/example-lwm2m-standalone/lwm2m/posix-main.h
+        tools/cooja/config/test_template.c
+        tools/cooja/examples/project_new_interface/dummy_intf.c
+        tools/cooja/examples/project_new_interface/dummy_intf.h
+        tools/cooja/mspsim/tests/cputest.c
+        tools/cooja/mspsim/tests/msp430setup.c
+        tools/cooja/mspsim/tests/msp430setup.h
+        tools/cooja/mspsim/tests/timertest.c
+        tools/serial-io/serialdump.c
+        tools/serial-io/tools-utils.c
+        tools/serial-io/tools-utils.h
+        tools/serial-io/tunslip6.c
+        tools/sky/uip6-bridge/dev/slip.c
+        tools/sky/uip6-bridge/dev/slip.h
+        tools/sky/uip6-bridge/fakeuip.c
+        tools/sky/uip6-bridge/project-conf.h
+        tools/sky/uip6-bridge/sicslow_ethernet.c
+        tools/sky/uip6-bridge/sicslow_ethernet.h
+        tools/sky/uip6-bridge/uip6-bridge-tap.c
+        tools/viewconf/viewconf.c
+        tools/wpcapslip/net/tcpdump.h
+        tools/wpcapslip/contiki-conf.h
+        tools/wpcapslip/rtimer-arch.h
+        tools/wpcapslip/tcpdump.c
+        tools/wpcapslip/wpcap.c
+        tools/wpcapslip/wpcapslip.c
+        tools/wpcapslip/wpcapstdio.c tpwsn-periodic-rtx/tpwsn-periodic-rtx.c tpwsn-periodic-rtx/tpwsn-periodic-rtx.h tpwsn-periodic-rtx/project-conf.h os/services/tpwsn-neighbour-discovery/module-macros.h)
