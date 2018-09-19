@@ -50,6 +50,7 @@
 #include "net/ipv6/uip.h"
 
 #include <stdbool.h>
+#include <net/ipv6/uip-ds6.h>
 
 /** \brief The neighbour discovery ping period */
 #ifdef TPWSN_ND_CONF_PERIOD
@@ -73,6 +74,7 @@ _a > _b ? _a : _b; })
 
 /** \brief The neighbour discovery ping packet structure */
 typedef struct nd_pkt_s {
+    uip_ipaddr_t ipaddr;  /* The global ip addr of the sending node */
     unsigned int sequence;  /* The sequence number for the ping */
     bool is_response;       /* Flag to indicate ping or response */
 } nd_pkt_t;
@@ -92,7 +94,7 @@ typedef struct nbr_buf_item_s {
 void tpwsn_neighbour_discovery_init(void);
 
 void tx_neighbourhood_ping(void);
-void tx_neighbourhood_ping_response(unsigned int, uip_ipaddr_t*);
+void tx_neighbourhood_ping_response(unsigned int, const uip_ipaddr_t*);
 
 #endif
 

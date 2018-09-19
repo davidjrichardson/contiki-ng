@@ -85,8 +85,8 @@ tpwsn_tcpip_handler(void) {
     LOG_INFO("Invoked TCPIP handler\n");
 
     if (uip_newdata()) {
-        nd_pkt_t *pkt = ((nd_pkt_t **) uip_appdata)[0];
-        uip_ipaddr_t remote_ip = uip_conn->ripaddr;
+        nd_pkt_t *pkt = ((nd_pkt_t *) uip_appdata);
+        uip_ipaddr_t remote_ip = pkt->ipaddr;
 
         LOG_INFO("Recv'd ND packet from ");
         LOG_INFO_6ADDR(&remote_ip);
@@ -100,38 +100,50 @@ tpwsn_tcpip_handler(void) {
 
             sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
             sender->sequence_no = pkt->sequence;
-            sender->last_seen = (unsigned long) clock_time();
+            sender->last_seen = clock_seconds();
             uip_ipaddr_copy(&sender->ipaddr, &remote_ip);
             list_add(neighbour_buf, sender);
 
+            LOG_INFO("pkt->is_response: %d\n", pkt->is_response);
+
             if (!pkt->is_response) {
-                LOG_INFO("Sending ping response to ");
-                LOG_INFO_6ADDR(&remote_ip);
-                LOG_INFO_("\n");
-
                 tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
             }
-        }
-
-        if (pkt->is_response) {
-            global_sequence = max(global_sequence, pkt->sequence);
         } else {
-            bool lost_sync = (sender->sequence_no != pkt->sequence);
-            sender->sequence_no = max(sender->sequence_no, pkt->sequence);
+            if (pkt->is_response) {
+                global_sequence = max(global_sequence, pkt->sequence);
+            } else {
+                bool lost_sync = (sender->sequence_no != pkt->sequence);
+                sender->sequence_no = max(sender->sequence_no, pkt->sequence);
 
-            if (lost_sync) {
-                LOG_INFO("Neighbour ");
-                LOG_INFO_6ADDR(&remote_ip);
-                LOG_INFO_(" is out of sync, sending response with seq=%u\n", pkt->sequence);
-                tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
+                if (lost_sync) {
+                    LOG_INFO("Neighbour ");
+                    LOG_INFO_6ADDR(&remote_ip);
+                    LOG_INFO_(" is out of sync, sending response with seq=%u\n", pkt->sequence);
+                    tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
+                }
             }
         }
+
     }
+}
+/*---------------------------------------------------------------------------*/
+void
+tpwsn_init(void) {
+    // TODO: Initialise lists/data structures
+    global_sequence = 0;
+    uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
+    nd_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_ND_PORT), NULL);
+    udp_bind(nd_bcast_conn, UIP_HTONS(TPWSN_ND_PORT));
+    nd_bcast_conn->rport = UIP_HTONS(TPWSN_ND_PORT);
+    nd_bcast_conn->lport = UIP_HTONS(TPWSN_ND_PORT);
 }
 /*---------------------------------------------------------------------------*/
 PROCESS(tpwsn_neighbour_discovery_process, "TPWSN Neighbour Discovery");
 PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
     PROCESS_BEGIN();
+
+    tpwsn_init();
 
     etimer_set(&nd_timer, TPWSN_ND_PERIOD);
 
@@ -180,6 +192,7 @@ tx_neighbourhood_ping(void) {
             .is_response = false,
             .sequence = global_sequence
     };
+    uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
 
     LOG_INFO("Sending ND ping to link-local neighbours at %lu\n",
             (unsigned long) clock_time());
@@ -194,26 +207,26 @@ tx_neighbourhood_ping(void) {
 
 /*---------------------------------------------------------------------------*/
 void
-tx_neighbourhood_ping_response(unsigned int new_sequence, uip_ipaddr_t *sender) {
+tx_neighbourhood_ping_response(unsigned int new_sequence, const uip_ipaddr_t *sender) {
+    LOG_INFO("Sending ping response to ");
+    LOG_INFO_6ADDR(sender);
+    LOG_INFO_("\n");
+
     nd_pkt_t new_ping = {
-            .is_response = true,
-            .sequence = new_sequence
+            .is_response = false,
+            .sequence = global_sequence
     };
+    uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
 
-    uip_udp_packet_sendto(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t), sender,
-                          TPWSN_ND_PORT);
+    uip_ipaddr_copy(&nd_bcast_conn->ripaddr, sender);
+    uip_udp_packet_send(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t));
+
+    // Return to accepting incoming packets from any IP
+    uip_create_unspecified(&nd_bcast_conn->ripaddr);
 }
-
 /*---------------------------------------------------------------------------*/
 void
 tpwsn_neighbour_discovery_init(void) {
-    // TODO: Initialise lists/data structures
-    global_sequence = 0;
-    uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
-    nd_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_ND_PORT), NULL);
-    udp_bind(nd_bcast_conn, UIP_HTONS(TPWSN_ND_PORT));
-    nd_bcast_conn->rport = UIP_HTONS(TPWSN_ND_PORT);
-    nd_bcast_conn->lport = UIP_HTONS(TPWSN_ND_PORT);
     // Start the ND process
     process_start(&tpwsn_neighbour_discovery_process, NULL);
 }
