@@ -90,7 +90,7 @@ tpwsn_tcpip_handler(void) {
 
         LOG_INFO("Recv'd ND packet from ");
         LOG_INFO_6ADDR(&remote_ip);
-        LOG_INFO_("at time %lu\n", (unsigned long) clock_time());
+        LOG_INFO_(" at time %lu\n", (unsigned long) clock_time());
 
         nbr_buf_item_t *sender = neighbour_cache_item(&remote_ip);
 
@@ -98,15 +98,25 @@ tpwsn_tcpip_handler(void) {
         if (sender == NULL) {
             LOG_INFO("ND packet is from new neighbour\n");
 
-            sender = (nbr_buf_item_t *) heapmem_alloc(sizeof(nbr_buf_item_t));
+            sender = (nbr_buf_item_t *) malloc(sizeof(nbr_buf_item_t));
+
+            if (sender == NULL) {
+                return;
+            }
+
             sender->sequence_no = pkt->sequence;
             sender->last_seen = clock_seconds();
             uip_ipaddr_copy(&sender->ipaddr, &remote_ip);
             list_add(neighbour_buf, sender);
 
+            LOG_INFO("Updating global sequence to %u\n", pkt->sequence);
+            global_sequence = max(global_sequence, pkt->sequence);
+
             LOG_INFO("pkt->is_response: %d\n", pkt->is_response);
 
             if (!pkt->is_response) {
+                etimer_set(&nd_timer, TPWSN_ND_PERIOD/2);
+
                 tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
             }
         } else {
@@ -153,6 +163,7 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
         PROCESS_YIELD();
 
         LOG_INFO("Passed YIELD, ev=%u\n", ev);
+        LOG_INFO("Our sequence number: %u\n", global_sequence);
 
         if (ev == tcpip_event) {
             LOG_INFO("TCPIP Event, invoking relevant ND handler\n");
@@ -162,9 +173,9 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
 
         if (etimer_expired(&nd_timer)) {
             tx_neighbourhood_ping();
-
-            etimer_set(&nd_timer, TPWSN_ND_PERIOD);
         }
+
+        etimer_set(&nd_timer, TPWSN_ND_PERIOD - CLOCK_SECOND + (random_rand() % (2 * CLOCK_SECOND)));
 
         // TODO: Add a break-out condition
     }
@@ -186,6 +197,7 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
 void
 tx_neighbourhood_ping(void) {
     // Increment the global sequence number to ensure monotonicity
+    LOG_INFO("Incrementing global sequence by 1\n");
     global_sequence = global_sequence + 1;
 
     nd_pkt_t new_ping = {
@@ -210,10 +222,10 @@ void
 tx_neighbourhood_ping_response(unsigned int new_sequence, const uip_ipaddr_t *sender) {
     LOG_INFO("Sending ping response to ");
     LOG_INFO_6ADDR(sender);
-    LOG_INFO_("\n");
+    LOG_INFO_(" at %lu\n", (unsigned long) clock_time());
 
     nd_pkt_t new_ping = {
-            .is_response = false,
+            .is_response = true,
             .sequence = global_sequence
     };
     uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
