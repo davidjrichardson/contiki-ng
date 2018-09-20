@@ -101,6 +101,8 @@ tpwsn_tcpip_handler(void) {
             sender = (nbr_buf_item_t *) malloc(sizeof(nbr_buf_item_t));
 
             if (sender == NULL) {
+                LOG_ERR("Could not allocate space for new neighbour\n");
+
                 return;
             }
 
@@ -110,28 +112,35 @@ tpwsn_tcpip_handler(void) {
             list_add(neighbour_buf, sender);
 
             LOG_INFO("Updating global sequence to %u\n", pkt->sequence);
-            global_sequence = max(global_sequence, pkt->sequence);
-
-            LOG_INFO("pkt->is_response: %d\n", pkt->is_response);
+            global_sequence = max(global_sequence, sender->sequence_no);
 
             if (!pkt->is_response) {
-                etimer_set(&nd_timer, TPWSN_ND_PERIOD/2);
-
                 tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
             }
         } else {
-            if (pkt->is_response) {
-                global_sequence = max(global_sequence, pkt->sequence);
-            } else {
-                bool lost_sync = (sender->sequence_no != pkt->sequence);
-                sender->sequence_no = max(sender->sequence_no, pkt->sequence);
+            bool lost_sync = ((sender->sequence_no + 1) != pkt->sequence);
 
-                if (lost_sync) {
-                    LOG_INFO("Neighbour ");
-                    LOG_INFO_6ADDR(&remote_ip);
-                    LOG_INFO_(" is out of sync, sending response with seq=%u\n", pkt->sequence);
-                    tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
+            if (lost_sync) {
+                LOG_INFO("Lost sync with neighbour ");
+                LOG_INFO_6ADDR(&remote_ip);
+                LOG_INFO_(" our seq=%u, sent seq=%u\n", sender->sequence_no, pkt->sequence);
+
+                // If we are out of date
+                if ((sender->sequence_no + 1) < pkt->sequence) {
+                    // Update our sender
+                    LOG_INFO("We are out of date, updating cache to seq=%u\n", pkt->sequence);
+                    sender->sequence_no = pkt->sequence;
+                    global_sequence = max(global_sequence, pkt->sequence);
+                // If the sender is out of date
+                } else if (pkt->sequence < (sender->sequence_no + 1)) {
+                    // Send a response to update the sender
+                    LOG_INFO("Sender is out of date, sending ping response with seq=%u\n", sender->sequence_no + 1);
+                    tx_neighbourhood_ping_response(sender->sequence_no + 1, &remote_ip);
+                    sender->sequence_no++;
                 }
+            } else {
+                sender->sequence_no++;
+                LOG_INFO("Nodes are in sync\n");
             }
         }
 
@@ -162,9 +171,6 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
     while (1) {
         PROCESS_YIELD();
 
-        LOG_INFO("Passed YIELD, ev=%u\n", ev);
-        LOG_INFO("Our sequence number: %u\n", global_sequence);
-
         if (ev == tcpip_event) {
             LOG_INFO("TCPIP Event, invoking relevant ND handler\n");
 
@@ -175,7 +181,7 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
             tx_neighbourhood_ping();
         }
 
-        etimer_set(&nd_timer, TPWSN_ND_PERIOD - CLOCK_SECOND + (random_rand() % (2 * CLOCK_SECOND)));
+        etimer_set(&nd_timer, TPWSN_ND_PERIOD + ((random_rand() % 10) * CLOCK_SECOND));
 
         // TODO: Add a break-out condition
     }
@@ -197,7 +203,6 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
 void
 tx_neighbourhood_ping(void) {
     // Increment the global sequence number to ensure monotonicity
-    LOG_INFO("Incrementing global sequence by 1\n");
     global_sequence = global_sequence + 1;
 
     nd_pkt_t new_ping = {
@@ -206,8 +211,8 @@ tx_neighbourhood_ping(void) {
     };
     uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
 
-    LOG_INFO("Sending ND ping to link-local neighbours at %lu\n",
-            (unsigned long) clock_time());
+    LOG_INFO("Sending ND ping to link-local neighbours at %lu with seq=%u\n",
+            (unsigned long) clock_time(), global_sequence);
 
     // TX the token to link-local nodes
     uip_ipaddr_copy(&nd_bcast_conn->ripaddr, &nd_ll_ipaddr);
