@@ -124,12 +124,17 @@ neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
 static bool
 should_bcast_message(const tpwsn_pkt_t *msg) {
     nbr_buf_item_t *neighbour = (nbr_buf_item_t *) list_head(*prtx_neighbours);
+    bool bcast = false;
 
     while(neighbour != NULL) {
-        neighbour_has_msg(msg, &neighbour->ipaddr);
+        if (!neighbour_has_msg(msg, &neighbour->ipaddr)) {
+            bcast = true;
+        }
 
         neighbour = list_item_next(neighbour);
     }
+
+    return bcast;
 }
 /*---------------------------------------------------------------------------*/
 static bool
