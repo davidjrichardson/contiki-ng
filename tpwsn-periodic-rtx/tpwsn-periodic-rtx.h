@@ -34,4 +34,50 @@
 #ifndef CONTIKI_NG_TPWSN_PERIODIC_RTX_H
 #define CONTIKI_NG_TPWSN_PERIODIC_RTX_H
 
+#include <net/ipv6/uip.h>
+#include <lib/list.h>
+
+/** \brief The broadcast period */
+#ifdef TPWSN_PRTX_CONF_PERIOD
+#define TPWSN_PRTX_PERIOD (CLOCK_SECOND * TPWSN_PRTX_CONF_PERIOD)
+#else /* TPWSN_PRTX_CONF_PERIOD */
+#define TPWSN_PRTX_PERIOD (CLOCK_SECOND * 7)
+#endif /*TPWSN_PRTX_CONF_PERIOD */
+
+/** \brief The port used for PRTX broadcasts */
+#ifdef TPWSN_PRTX_CONF_PORT
+#define TPWSN_PRTX_PORT TPWSN_PRTX_CONF_PORT
+#else /* TPWSN_PRTX_CONF_PORT */
+#define TPWSN_PRTX_PORT 30003
+#endif /* TPWSN_PRTX_CONF_PORT */
+
+/** \brief A wrapping packet structure to handle TPWSN routing */
+typedef struct tpwsn_pkt_s {
+    struct tpwsn_pkt_s *next;
+    uip_ipaddr_t dest;
+    unsigned int msg_uid;
+    unsigned char* data;
+} tpwsn_pkt_t;
+
+/** \brief A sucicnt representation of a message sent to a neighbour (its UID) */
+typedef struct tpwsn_map_msg_s {
+    struct tpwsn_map_msg_s *next;
+    unsigned int msg_uid;
+    unsigned long last_sent;
+} tpwsn_map_msg_t;
+
+/** \brief A map type to store msg->ip mapping */
+typedef struct tpwsn_map_s {
+    struct tpwsn_map_s *next;
+    uip_ipaddr_t ipaddr;
+    LIST_STRUCT(msg_ids);
+} tpwsn_map_t;
+
+/**
+ * Initialise the periodic rtx broadcast application
+ */
+static void prtx_init(void);
+
+void prtx_broadcast(const tpwsn_pkt_t *pkt);
+
 #endif //CONTIKI_NG_TPWSN_PERIODIC_RTX_H

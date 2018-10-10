@@ -64,6 +64,11 @@ static unsigned int global_sequence;
 LIST(neighbour_buf);
 
 /*---------------------------------------------------------------------------*/
+const list_t *
+nd_neighbour_list(void) {
+    return (const list_t *) &neighbour_buf;
+}
+/*---------------------------------------------------------------------------*/
 static nbr_buf_item_t *
 neighbour_cache_item(uip_ipaddr_t *ipaddr) {
     nbr_buf_item_t *item = list_head(neighbour_buf);

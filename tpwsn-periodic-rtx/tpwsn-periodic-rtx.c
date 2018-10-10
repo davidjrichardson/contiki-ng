@@ -33,9 +33,210 @@
 
 #include "tpwsn-periodic-rtx.h"
 
+#include "neighbour-discovery.h"
+
+#include "net/ipv6/uip.h"
+
 #include "contiki.h"
 #include "contiki-net.h"
 
+#include "lib/list.h"
+#include "lib/queue.h"
+#include "lib/heapmem.h"
+
+#define DEBUG DEBUG_FULL
+
+#include "sys/log.h"
+
+#define LOG_MODULE "TPWSN-PRTX"
+#define LOG_LEVEL LOG_LEVEL_INFO
+
+// The broadcast period timer
+static struct etimer prtx_timer;
+
+// The udp link-local connection for pings
+static struct uip_udp_conn *prtx_bcast_conn;
+
+// The link-local IP address for ND pings
+static uip_ipaddr_t prtx_ll_ipaddr;
+
+static const list_t *prtx_neighbours;
+
+LIST(neighbour_msg_map);
+
+QUEUE(msg_buffer);
+
+// TODO: Sensor node sent list(s)
+
+/*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
+static tpwsn_map_t *
+get_item_for_addr(const uip_ipaddr_t *ipaddr) {
+    tpwsn_map_t *item = list_head(neighbour_msg_map);
+
+    while (item != NULL) {
+        if (uip_ip6addr_cmp((void *) &(item->ipaddr), (void *) ipaddr)) {
+            return item;
+        }
+
+        item = (tpwsn_map_t *) list_item_next(item);
+    }
+
+    return NULL;
+}
+/*---------------------------------------------------------------------------*/
+static bool
+neighbour_in_msg_map(const uip_ipaddr_t *neighbour) {
+    tpwsn_map_t *item = list_head(neighbour_msg_map);
+
+    while (item != NULL) {
+        if (uip_ip6addr_cmp((void *) &(item->ipaddr), (void *) neighbour)) {
+            return true;
+        }
+
+        item = (tpwsn_map_t *) list_item_next(item);
+    }
+
+    return false;
+}
+/*---------------------------------------------------------------------------*/
+static bool
+neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
+    tpwsn_map_t *map_item = list_head(neighbour_msg_map);
+
+    while(map_item != NULL) {
+        if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender)) {
+            tpwsn_map_msg_t *msg_item = list_head(map_item->msg_ids);
+
+            while (msg_item != NULL) {
+                if (msg_item->msg_uid == msg->msg_uid) {
+                    return true;
+                }
+            }
+        }
+
+        map_item = (tpwsn_map_t *) list_item_next(map_item);
+    }
+
+    return false;
+}
+/*---------------------------------------------------------------------------*/
+static bool
+should_bcast_message(const tpwsn_pkt_t *msg) {
+    nbr_buf_item_t *neighbour = (nbr_buf_item_t *) list_head(*prtx_neighbours);
+
+    while(neighbour != NULL) {
+        neighbour_has_msg(msg, &neighbour->ipaddr);
+
+        neighbour = list_item_next(neighbour);
+    }
+}
+/*---------------------------------------------------------------------------*/
+static bool
+is_msg_in_buf(const tpwsn_pkt_t *msg) {
+    tpwsn_pkt_t *item = list_head(msg_buffer);
+
+    while (item != NULL) {
+        if (item->msg_uid == msg->msg_uid) {
+            return true;
+        }
+
+        item = (tpwsn_pkt_t *) list_item_next(item);
+    }
+
+    return false;
+}
+/*---------------------------------------------------------------------------*/
+static bool
+prtx_neighbour_refresh() {
+    nbr_buf_item_t *item = (nbr_buf_item_t *) list_head(*prtx_neighbours);
+    bool success = false;
+
+    while (item != NULL) {
+        if (!neighbour_in_msg_map(&item->ipaddr)) {
+            tpwsn_map_t *map_item = (tpwsn_map_t *) malloc(sizeof(tpwsn_map_t));
+
+            if (map_item == NULL) {
+                LOG_ERR("Failed to allocate memory for the neighbour message map\n");
+
+                return false;
+            }
+
+            list_init(*(map_item->msg_ids));
+            uip_ip6addr_copy(&(map_item->ipaddr), &(item->ipaddr));
+            list_add(neighbour_msg_map, map_item);
+        }
+
+        item = (nbr_buf_item_t *) list_item_next(item);
+    }
+
+    return success;
+}
+/*---------------------------------------------------------------------------*/
+static void
+recv_pkt_handler() {
+    if (uip_newdata()) {
+        tpwsn_pkt_t *pkt = ((tpwsn_pkt_t *) uip_appdata);
+        uip_ipaddr_t remote_ip = prtx_bcast_conn->ripaddr;
+
+        if (!is_msg_in_buf(pkt)) {
+            // Copy the packet to our own memory and add it to the list
+            tpwsn_pkt_t *new_pkt = (tpwsn_pkt_t *) malloc(sizeof(tpwsn_pkt_t));
+
+            if (new_pkt == NULL) {
+                LOG_ERR("Could not allocate memory to copy packet to app space\n");
+
+                return;
+            }
+
+            memcpy(new_pkt, pkt,sizeof(tpwsn_pkt_t));
+            queue_enqueue(msg_buffer, new_pkt);
+
+            // TODO: Start re-broadcasting
+
+            // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
+            etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+        }
+
+        if (!neighbour_has_msg(pkt, &remote_ip)) {
+            tpwsn_map_msg_t *msg_item = (tpwsn_map_msg_t *) malloc(sizeof(tpwsn_map_msg_t));
+
+            if (msg_item == NULL) {
+                LOG_ERR("Failed to allocate space for a message map list item\n");
+
+                return;
+            }
+
+            msg_item->last_sent = (unsigned long) clock_time();
+            msg_item->msg_uid = pkt->msg_uid;
+
+            tpwsn_map_t *map_entry = get_item_for_addr(&remote_ip);
+
+            if (map_entry == NULL) {
+                LOG_ERR("Failed to locate neighbour entry for IP\n");
+
+                return;
+            }
+
+            list_add(*(map_entry->msg_ids), msg_item);
+        }
+    }
+}
+/*---------------------------------------------------------------------------*/
+static void
+prtx_init() {
+    // Init the connection
+    uip_create_linklocal_allnodes_mcast(&prtx_ll_ipaddr);
+    prtx_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_PRTX_PORT), NULL);
+    udp_bind(prtx_bcast_conn, UIP_HTONS(TPWSN_PRTX_PORT));
+    prtx_bcast_conn->rport = UIP_HTONS(TPWSN_PRTX_PORT);
+    prtx_bcast_conn->lport = UIP_HTONS(TPWSN_PRTX_PORT);
+    // Init the lists etc
+    list_init(neighbour_msg_map);
+    queue_init(msg_buffer);
+    // Init the pointer to the neighbour buffer
+    prtx_neighbours = nd_neighbour_list();
+}
 /*---------------------------------------------------------------------------*/
 PROCESS(periodic_rtx_process, "Periodic Retransmission Protocol Process");
 AUTOSTART_PROCESSES(&periodic_rtx_process);
@@ -44,7 +245,37 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
 {
     PROCESS_BEGIN();
 
-    // TODO: Implement periodic RTX
+    LOG_INFO("Starting Periodic RTX broadcast app\n");
+
+    prtx_init();
+
+    // TODO: Define a message->neighbour relation list
+
+//    etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+
+    while (1) {
+        // TODO: Need to cover being the source or the sink for the
+        // TODO: How do we select a source/sink?
+
+        PROCESS_YIELD();
+
+        // Refresh the neighbour map each invocation
+        prtx_neighbour_refresh();
+
+        if (ev == tcpip_event) {
+            recv_pkt_handler();
+        }
+
+        if (etimer_expired(&prtx_timer)) {
+            if (should_bcast_message(queue_peek(msg_buffer))) {
+                // TODO: Rebroadcast message
+                // TODO: Handle the case that it doesn't need re-broadcasting (message is removed from the buffer)
+
+                // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
+                etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+            }
+        }
+    }
 
     PROCESS_END();
 }
