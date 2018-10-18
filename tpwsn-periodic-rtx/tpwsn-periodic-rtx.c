@@ -44,6 +44,9 @@
 #include "lib/queue.h"
 #include "lib/heapmem.h"
 
+#include "dev/serial-line.h"
+#include <stdio.h>
+
 #define DEBUG DEBUG_FULL
 
 #include "sys/log.h"
@@ -66,9 +69,6 @@ LIST(neighbour_msg_map);
 
 QUEUE(msg_buffer);
 
-// TODO: Sensor node sent list(s)
-
-/*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 static tpwsn_map_t *
 get_item_for_addr(const uip_ipaddr_t *ipaddr) {
@@ -179,6 +179,19 @@ prtx_neighbour_refresh() {
 }
 /*---------------------------------------------------------------------------*/
 static void
+broadcast_msg(const tpwsn_pkt_t *msg) {
+    // Rebroadcast if we aren't the destination
+    if (!uip_ip6addr_cmp(&uip_ds6_get_link_local(-1)->ipaddr, &(msg->dest))) {
+        // TX the token to link-local nodes
+        uip_ipaddr_copy(&prtx_bcast_conn->ripaddr, &prtx_ll_ipaddr);
+        uip_udp_packet_send(prtx_bcast_conn, msg, sizeof(tpwsn_pkt_t));
+
+        // Return to accepting incoming packets from any IP
+        uip_create_unspecified(&prtx_bcast_conn->ripaddr);
+    }
+}
+/*---------------------------------------------------------------------------*/
+static void
 recv_pkt_handler() {
     if (uip_newdata()) {
         tpwsn_pkt_t *pkt = ((tpwsn_pkt_t *) uip_appdata);
@@ -197,12 +210,13 @@ recv_pkt_handler() {
             memcpy(new_pkt, pkt,sizeof(tpwsn_pkt_t));
             queue_enqueue(msg_buffer, new_pkt);
 
-            // TODO: Start re-broadcasting
-
-            // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
-            etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+            if(etimer_expired(&prtx_timer)) {
+                // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
+                etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+            }
         }
 
+        // If a neighbour has sent the message but isn't marked as receiving it
         if (!neighbour_has_msg(pkt, &remote_ip)) {
             tpwsn_map_msg_t *msg_item = (tpwsn_map_msg_t *) malloc(sizeof(tpwsn_map_msg_t));
 
@@ -241,6 +255,7 @@ prtx_init() {
     queue_init(msg_buffer);
     // Init the pointer to the neighbour buffer
     prtx_neighbours = nd_neighbour_list();
+    serial_line_init();
 }
 /*---------------------------------------------------------------------------*/
 PROCESS(periodic_rtx_process, "Periodic Retransmission Protocol Process");
@@ -254,13 +269,10 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
 
     prtx_init();
 
-    // TODO: Define a message->neighbour relation list
-
-//    etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+                etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
 
     while (1) {
-        // TODO: Need to cover being the source or the sink for the
-        // TODO: How do we select a source/sink?
+        // TODO: Handle the case when the node is the destination
 
         PROCESS_YIELD();
 
@@ -271,13 +283,21 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
             recv_pkt_handler();
         }
 
+        if (ev == serial_line_event_message && data != NULL) {
+            LOG_INFO("Recv'd serial line: %s\n", (char *) data);
+            // TODO: Implement source/sink selection using serial
+        }
+
         if (etimer_expired(&prtx_timer)) {
             if (should_bcast_message(queue_peek(msg_buffer))) {
-                // TODO: Rebroadcast message
-                // TODO: Handle the case that it doesn't need re-broadcasting (message is removed from the buffer)
+                broadcast_msg(queue_peek(msg_buffer));
 
                 // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
                 etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+            } else {
+                // Remove the packet from the queue and free the memory
+                tpwsn_pkt_t *old_pkt = (tpwsn_pkt_t *) queue_dequeue(msg_buffer);
+                free(old_pkt);
             }
         }
     }

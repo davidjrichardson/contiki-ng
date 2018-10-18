@@ -175,10 +175,10 @@ platform_init_stage_three(void)
 
   LOG_INFO("CC2420 CCA threshold %i\n", CC2420_CONF_CCA_THRESH);
 
-#if !NETSTACK_CONF_WITH_IPV6
+//#if !NETSTACK_CONF_WITH_IPV6
   uart1_set_input(serial_line_input_byte);
   serial_line_init();
-#endif
+//#endif
 
   leds_off(LEDS_GREEN);
 
