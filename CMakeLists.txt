@@ -2015,4 +2015,4 @@ add_executable(contiki_ng
         tools/wpcapslip/tcpdump.c
         tools/wpcapslip/wpcap.c
         tools/wpcapslip/wpcapslip.c
-        tools/wpcapslip/wpcapstdio.c tpwsn-periodic-rtx/tpwsn-periodic-rtx.c tpwsn-periodic-rtx/tpwsn-periodic-rtx.h tpwsn-periodic-rtx/project-conf.h os/services/tpwsn-neighbour-discovery/module-macros.h)
+        tools/wpcapslip/wpcapstdio.c tpwsn-periodic-rtx/tpwsn-periodic-rtx-sink.c tpwsn-periodic-rtx/tpwsn-periodic-rtx.c tpwsn-periodic-rtx/tpwsn-periodic-rtx.h tpwsn-periodic-rtx/project-conf.h os/services/tpwsn-neighbour-discovery/module-macros.h)

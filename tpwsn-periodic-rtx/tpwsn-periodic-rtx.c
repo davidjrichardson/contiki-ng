@@ -46,6 +46,7 @@
 
 #include "dev/serial-line.h"
 #include <stdio.h>
+#include <string.h>
 
 #define DEBUG DEBUG_FULL
 
@@ -243,6 +244,14 @@ recv_pkt_handler() {
 }
 /*---------------------------------------------------------------------------*/
 static void
+serial_handler(const char *data) {
+//    // TODO: Implement source/sink selection using serial
+//    if (strcmp(data,"foo") == 0) {
+//        LOG_INFO("Recv'd serial line: %s\n", data);
+//    }
+}
+/*---------------------------------------------------------------------------*/
+static void
 prtx_init() {
     // Init the connection
     uip_create_linklocal_allnodes_mcast(&prtx_ll_ipaddr);
@@ -269,8 +278,6 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
 
     prtx_init();
 
-                etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
-
     while (1) {
         // TODO: Handle the case when the node is the destination
 
@@ -284,8 +291,7 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
         }
 
         if (ev == serial_line_event_message && data != NULL) {
-            LOG_INFO("Recv'd serial line: %s\n", (char *) data);
-            // TODO: Implement source/sink selection using serial
+            serial_handler((const char *) data);
         }
 
         if (etimer_expired(&prtx_timer)) {
