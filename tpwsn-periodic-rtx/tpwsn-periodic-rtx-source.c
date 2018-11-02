@@ -57,7 +57,6 @@
 
 // The broadcast period timer
 static struct etimer prtx_timer;
-static struct etimer start_timer;
 
 // The udp link-local connection for pings
 static struct uip_udp_conn *prtx_bcast_conn;
@@ -112,6 +111,8 @@ neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
         if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender)) {
             tpwsn_map_msg_t *msg_item = list_head(map_item->msg_ids);
 
+            LOG_INFO("map_msg_item: %p\n", msg_item);
+
             while (msg_item != NULL) {
                 if (msg_item->msg_uid == msg->msg_uid) {
                     return true;
@@ -133,6 +134,8 @@ should_bcast_message(const tpwsn_pkt_t *msg) {
 
     nbr_buf_item_t *neighbour = (nbr_buf_item_t *) list_head(*prtx_neighbours);
     bool bcast = false;
+
+    LOG_INFO("msg: %p, neighbour: %p\n", msg, neighbour);
 
     while(neighbour != NULL) {
         if (!neighbour_has_msg(msg, &neighbour->ipaddr)) {
@@ -285,9 +288,11 @@ start_protocol_send() {
     msg->msg_uid = 1;
     uip_ip6addr(&(msg->dest), 0, 0, 0, 0, 0, 0, 0, 0);
 
-    LOG_INFO("Sending initial message, addr: %p\n", msg);
+    LOG_INFO("Queueing initial message, addr: %p\n", msg);
 
-    broadcast_msg(msg);
+    // Using this instead of straight up broadcasting the message ends up with a sefault
+    // Not quite sure why -- stacktrace points to neighbour_has_msg
+    queue_enqueue(msg_buffer, msg);
 }
 /*---------------------------------------------------------------------------*/
 PROCESS(periodic_rtx_process, "Periodic Retransmission Protocol Process");
@@ -297,10 +302,11 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
 {
     PROCESS_BEGIN();
 
-    LOG_INFO("Starting Periodic RTX broadcast source app\n");
+    LOG_INFO("Starting Periodic RTX source app\n");
 
     prtx_init();
-    etimer_set(&start_timer, TPWSN_PRTX_PERIOD);
+    start_protocol_send();
+    etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
 
     // TODO: Broadcast a message after some specific timer period
 
@@ -316,11 +322,6 @@ PROCESS_THREAD(periodic_rtx_process, ev, data)
 
         if (ev == serial_line_event_message && data != NULL) {
             serial_handler((const char *) data);
-        }
-
-        if (etimer_expired(&start_timer)) {
-            LOG_INFO("Starting protocol send\n");
-            start_protocol_send();
         }
 
         if (etimer_expired(&prtx_timer)) {

@@ -97,7 +97,7 @@ tcpip_handler() {
         tpwsn_pkt_t *pkt = ((tpwsn_pkt_t *) uip_appdata);
 
         if (!neighbour_has_msg(pkt->msg_uid)) {
-            LOG_INFO("Sink recv'd message at %lu", (unsigned long) clock_time());
+            LOG_INFO("Sink recv'd message at %lu\n", (unsigned long) clock_time());
 
             tpwsn_map_msg_t *msg = (tpwsn_map_msg_t *) malloc(sizeof(tpwsn_map_msg_t));
             msg->msg_uid = pkt->msg_uid;
