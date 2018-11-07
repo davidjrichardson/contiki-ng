@@ -85,6 +85,7 @@ get_item_for_addr(const uip_ipaddr_t *ipaddr) {
 
     return NULL;
 }
+
 /*---------------------------------------------------------------------------*/
 static bool
 neighbour_in_msg_map(const uip_ipaddr_t *neighbour) {
@@ -100,6 +101,7 @@ neighbour_in_msg_map(const uip_ipaddr_t *neighbour) {
 
     return false;
 }
+
 /*---------------------------------------------------------------------------*/
 static bool
 neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
@@ -107,16 +109,19 @@ neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
 
     LOG_INFO("msg: %p, sender: %p, head: %p\n", msg, sender, map_item);
 
-    while(map_item != NULL) {
-        if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender)) {
-            tpwsn_map_msg_t *msg_item = list_head(map_item->msg_ids);
+    while (map_item != NULL) {
+        LOG_INFO("map_item->msg_ids: %p\n", map_item->msg_ids);
 
+        if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender) && map_item->msg_ids != NULL) {
+            tpwsn_map_msg_t *msg_item = (tpwsn_map_msg_t *) list_head(map_item->msg_ids);
             LOG_INFO("map_msg_item: %p\n", msg_item);
 
             while (msg_item != NULL) {
                 if (msg_item->msg_uid == msg->msg_uid) {
                     return true;
                 }
+
+                msg_item = (tpwsn_map_msg_t *) list_item_next(msg_item);
             }
         }
 
@@ -125,6 +130,7 @@ neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
 
     return false;
 }
+
 /*---------------------------------------------------------------------------*/
 static bool
 should_bcast_message(const tpwsn_pkt_t *msg) {
@@ -137,7 +143,7 @@ should_bcast_message(const tpwsn_pkt_t *msg) {
 
     LOG_INFO("msg: %p, neighbour: %p\n", msg, neighbour);
 
-    while(neighbour != NULL) {
+    while (neighbour != NULL) {
         if (!neighbour_has_msg(msg, &neighbour->ipaddr)) {
             bcast = true;
         }
@@ -147,6 +153,7 @@ should_bcast_message(const tpwsn_pkt_t *msg) {
 
     return bcast;
 }
+
 /*---------------------------------------------------------------------------*/
 static bool
 is_msg_in_buf(const tpwsn_pkt_t *msg) {
@@ -162,6 +169,7 @@ is_msg_in_buf(const tpwsn_pkt_t *msg) {
 
     return false;
 }
+
 /*---------------------------------------------------------------------------*/
 static bool
 prtx_neighbour_refresh() {
@@ -188,6 +196,7 @@ prtx_neighbour_refresh() {
 
     return success;
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 broadcast_msg(const tpwsn_pkt_t *msg) {
@@ -201,6 +210,7 @@ broadcast_msg(const tpwsn_pkt_t *msg) {
         uip_create_unspecified(&prtx_bcast_conn->ripaddr);
     }
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 recv_pkt_handler() {
@@ -218,10 +228,10 @@ recv_pkt_handler() {
                 return;
             }
 
-            memcpy(new_pkt, pkt,sizeof(tpwsn_pkt_t));
+            memcpy(new_pkt, pkt, sizeof(tpwsn_pkt_t));
             queue_enqueue(msg_buffer, new_pkt);
 
-            if(etimer_expired(&prtx_timer)) {
+            if (etimer_expired(&prtx_timer)) {
                 // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
                 etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
             }
@@ -252,6 +262,7 @@ recv_pkt_handler() {
         }
     }
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 serial_handler(const char *data) {
@@ -260,6 +271,7 @@ serial_handler(const char *data) {
 //        LOG_INFO("Recv'd serial line: %s\n", data);
 //    }
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 prtx_init() {
@@ -276,6 +288,7 @@ prtx_init() {
     prtx_neighbours = nd_neighbour_list();
     serial_line_init();
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 start_protocol_send() {
@@ -298,45 +311,44 @@ start_protocol_send() {
 PROCESS(periodic_rtx_process, "Periodic Retransmission Protocol Process");
 AUTOSTART_PROCESSES(&periodic_rtx_process);
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(periodic_rtx_process, ev, data)
-{
+PROCESS_THREAD(periodic_rtx_process, ev, data) {
     PROCESS_BEGIN();
 
-    LOG_INFO("Starting Periodic RTX source app\n");
+                LOG_INFO("Starting Periodic RTX source app\n");
 
-    prtx_init();
-    start_protocol_send();
-    etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
-
-    // TODO: Broadcast a message after some specific timer period
-
-    while (1) {
-        PROCESS_YIELD();
-
-        // Refresh the neighbour map each invocation
-        prtx_neighbour_refresh();
-
-        if (ev == tcpip_event) {
-            recv_pkt_handler();
-        }
-
-        if (ev == serial_line_event_message && data != NULL) {
-            serial_handler((const char *) data);
-        }
-
-        if (etimer_expired(&prtx_timer)) {
-            if (should_bcast_message(queue_peek(msg_buffer))) {
-                broadcast_msg(queue_peek(msg_buffer));
-
-                // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
+                prtx_init();
+                start_protocol_send();
                 etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
-            } else {
-                // Remove the packet from the queue and free the memory
-                tpwsn_pkt_t *old_pkt = (tpwsn_pkt_t *) queue_dequeue(msg_buffer);
-                free(old_pkt);
-            }
-        }
-    }
+
+                // TODO: Broadcast a message after some specific timer period
+
+                while (1) {
+                    PROCESS_YIELD();
+
+                    // Refresh the neighbour map each invocation
+                    prtx_neighbour_refresh();
+
+                    if (ev == tcpip_event) {
+                        recv_pkt_handler();
+                    }
+
+                    if (ev == serial_line_event_message && data != NULL) {
+                        serial_handler((const char *) data);
+                    }
+
+                    if (etimer_expired(&prtx_timer)) {
+                        if (should_bcast_message(queue_peek(msg_buffer))) {
+                            broadcast_msg(queue_peek(msg_buffer));
+
+                            // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
+                            etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+                        } else {
+                            // Remove the packet from the queue and free the memory
+                            tpwsn_pkt_t *old_pkt = (tpwsn_pkt_t *) queue_dequeue(msg_buffer);
+                            free(old_pkt);
+                        }
+                    }
+                }
 
     PROCESS_END();
 }
