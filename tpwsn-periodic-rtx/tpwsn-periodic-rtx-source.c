@@ -107,14 +107,9 @@ static bool
 neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
     tpwsn_map_t *map_item = list_head(neighbour_msg_map);
 
-    LOG_INFO("msg: %p, sender: %p, head: %p\n", msg, sender, map_item);
-
     while (map_item != NULL) {
-        LOG_INFO("map_item->msg_ids: %p\n", map_item->msg_ids);
-
         if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender) && map_item->msg_ids != NULL) {
             tpwsn_map_msg_t *msg_item = (tpwsn_map_msg_t *) list_head(map_item->msg_ids);
-            LOG_INFO("map_msg_item: %p\n", msg_item);
 
             while (msg_item != NULL) {
                 if (msg_item->msg_uid == msg->msg_uid) {
@@ -140,8 +135,6 @@ should_bcast_message(const tpwsn_pkt_t *msg) {
 
     nbr_buf_item_t *neighbour = (nbr_buf_item_t *) list_head(*prtx_neighbours);
     bool bcast = false;
-
-    LOG_INFO("msg: %p, neighbour: %p\n", msg, neighbour);
 
     while (neighbour != NULL) {
         if (!neighbour_has_msg(msg, &neighbour->ipaddr)) {
@@ -300,8 +293,6 @@ start_protocol_send() {
 
     msg->msg_uid = 1;
     uip_ip6addr(&(msg->dest), 0, 0, 0, 0, 0, 0, 0, 0);
-
-    LOG_INFO("Queueing initial message, addr: %p\n", msg);
 
     // Using this instead of straight up broadcasting the message ends up with a sefault
     // Not quite sure why -- stacktrace points to neighbour_has_msg
