@@ -75,15 +75,20 @@ _a > _b ? _a : _b; })
 /** \brief The neighbour discovery ping packet structure */
 typedef struct nd_pkt_s {
     uip_ipaddr_t ipaddr;  /* The global ip addr of the sending node */
-    unsigned int sequence;  /* The sequence number for the ping */
+    int sequence;  /* The sequence number for the ping */
     bool is_response;       /* Flag to indicate ping or response */
 } nd_pkt_t;
+
+typedef struct nd_resp_queue_s {
+    struct nd_resp_queue_s *next;   /* The next item in the cache */
+    uip_ipaddr_t ipaddr;            /* The IP address of the node */
+} nd_resp_queue_t;
 
 /** \brief An item in the neighbour cache for this node */
 typedef struct nbr_buf_item_s {
     struct nbr_buf_item_s *next;/* The next item in the cache */
     unsigned long last_seen;    /* The clock time a node was seen last */
-    unsigned int sequence_no;   /* The last-seen sequence number */
+    int sequence_no;   /* The last-seen sequence number */
     uip_ipaddr_t ipaddr;       /* The IP address of the node */
 } nbr_buf_item_t;
 
@@ -94,7 +99,7 @@ typedef struct nbr_buf_item_s {
 void tpwsn_neighbour_discovery_init(void);
 
 void tx_neighbourhood_ping(void);
-void tx_neighbourhood_ping_response(unsigned int, const uip_ipaddr_t*);
+void tx_neighbourhood_ping_response(const uip_ipaddr_t*);
 
 /**
  * Access the ND buffer

@@ -38,6 +38,7 @@
 #include "net/ipv6/uip.h"
 
 #include "lib/list.h"
+#include "lib/queue.h"
 #include "lib/heapmem.h"
 
 #define DEBUG DEBUG_FULL
@@ -57,11 +58,9 @@ static struct uip_udp_conn *nd_bcast_conn;
 // The link-local IP address for ND pings
 static uip_ipaddr_t nd_ll_ipaddr;
 
-// The node-local global sequence number for ND
-static unsigned int global_sequence;
-
 // The neighbourhood buffer
 LIST(neighbour_buf);
+QUEUE(nd_response_queue);
 
 /*---------------------------------------------------------------------------*/
 const list_t *
@@ -70,7 +69,7 @@ nd_neighbour_list(void) {
 }
 /*---------------------------------------------------------------------------*/
 static nbr_buf_item_t *
-neighbour_cache_item(uip_ipaddr_t *ipaddr) {
+neighbour_cache_item(const uip_ipaddr_t *ipaddr) {
     nbr_buf_item_t *item = list_head(neighbour_buf);
 
     while (item != NULL) {
@@ -116,36 +115,45 @@ tpwsn_tcpip_handler(void) {
             uip_ipaddr_copy(&sender->ipaddr, &remote_ip);
             list_add(neighbour_buf, sender);
 
-            LOG_INFO("Updating global sequence to %u\n", pkt->sequence);
-            global_sequence = max(global_sequence, sender->sequence_no);
+            LOG_INFO("Added neighbour ");
+            LOG_INFO_6ADDR(&sender->ipaddr);
+            LOG_INFO_(" to NBC with sequence %d\n", sender->sequence_no);
 
             if (!pkt->is_response) {
-                tx_neighbourhood_ping_response(pkt->sequence, &remote_ip);
+                nd_resp_queue_t *queue_item = (nd_resp_queue_t *) malloc(sizeof(nd_resp_queue_t));
+
+                if (queue_item == NULL) {
+                    LOG_ERR("Could not allocate space for response queue item\n");
+
+                    return;
+                }
+
+                LOG_INFO("Queuing response for ");
+                LOG_INFO_6ADDR(&sender->ipaddr);
+                LOG_INFO_("\n");
+
+                uip_ipaddr_copy(&queue_item->ipaddr, &remote_ip);
+                queue_enqueue(nd_response_queue, queue_item);
             }
         } else {
-            bool lost_sync = ((sender->sequence_no + 1) != pkt->sequence);
+            // Update our sequence number to match theirs
+            sender->sequence_no = max(sender->sequence_no, pkt->sequence);
 
-            if (lost_sync) {
-                LOG_INFO("Lost sync with neighbour ");
-                LOG_INFO_6ADDR(&remote_ip);
-                LOG_INFO_(" our seq=%u, sent seq=%u\n", sender->sequence_no, pkt->sequence);
+            if (!pkt->is_response) {
+                nd_resp_queue_t *queue_item = (nd_resp_queue_t *) malloc(sizeof(nd_resp_queue_t));
 
-                // If we are out of date
-                if ((sender->sequence_no + 1) < pkt->sequence) {
-                    // Update our sender
-                    LOG_INFO("We are out of date, updating cache to seq=%u\n", pkt->sequence);
-                    sender->sequence_no = pkt->sequence;
-                    global_sequence = max(global_sequence, pkt->sequence);
-                // If the sender is out of date
-                } else if (pkt->sequence < (sender->sequence_no + 1)) {
-                    // Send a response to update the sender
-                    LOG_INFO("Sender is out of date, sending ping response with seq=%u\n", sender->sequence_no + 1);
-                    tx_neighbourhood_ping_response(sender->sequence_no + 1, &remote_ip);
-                    sender->sequence_no++;
+                if (queue_item == NULL) {
+                    LOG_ERR("Could not allocate space for response queue item\n");
+
+                    return;
                 }
-            } else {
-                sender->sequence_no++;
-                LOG_INFO("Nodes are in sync\n");
+
+                LOG_INFO("Queuing response for ");
+                LOG_INFO_6ADDR(&sender->ipaddr);
+                LOG_INFO_("\n");
+
+                uip_ipaddr_copy(&queue_item->ipaddr, &remote_ip);
+                queue_enqueue(nd_response_queue, queue_item);
             }
         }
 
@@ -155,12 +163,23 @@ tpwsn_tcpip_handler(void) {
 void
 tpwsn_init(void) {
     // TODO: Initialise lists/data structures
-    global_sequence = 0;
     uip_create_linklocal_allnodes_mcast(&nd_ll_ipaddr);
     nd_bcast_conn = udp_new(NULL, UIP_HTONS(TPWSN_ND_PORT), NULL);
     udp_bind(nd_bcast_conn, UIP_HTONS(TPWSN_ND_PORT));
     nd_bcast_conn->rport = UIP_HTONS(TPWSN_ND_PORT);
     nd_bcast_conn->lport = UIP_HTONS(TPWSN_ND_PORT);
+
+    list_init(neighbour_buf);
+    queue_init(nd_response_queue);
+}
+/*---------------------------------------------------------------------------*/
+void
+process_nd_response_queue(void) {
+    while (!queue_is_empty(nd_response_queue)) {
+        nd_resp_queue_t *item = (nd_resp_queue_t *) queue_dequeue(nd_response_queue);
+
+        tx_neighbourhood_ping_response(&item->ipaddr);
+    }
 }
 /*---------------------------------------------------------------------------*/
 PROCESS(tpwsn_neighbour_discovery_process, "TPWSN Neighbour Discovery");
@@ -176,6 +195,8 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
     while (1) {
         PROCESS_YIELD();
 
+        // TODO: Add in method to process the responses for the ND ping(s)
+
         if (ev == tcpip_event) {
             LOG_INFO("TCPIP Event, invoking relevant ND handler\n");
 
@@ -185,6 +206,8 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
         if (etimer_expired(&nd_timer)) {
             tx_neighbourhood_ping();
         }
+
+        process_nd_response_queue();
 
         etimer_set(&nd_timer, TPWSN_ND_PERIOD + ((random_rand() % 10) * CLOCK_SECOND));
 
@@ -207,17 +230,14 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
 /*---------------------------------------------------------------------------*/
 void
 tx_neighbourhood_ping(void) {
-    // Increment the global sequence number to ensure monotonicity
-    global_sequence = global_sequence + 1;
-
     nd_pkt_t new_ping = {
             .is_response = false,
-            .sequence = global_sequence
+            .sequence = -1
     };
     uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
 
-    LOG_INFO("Sending ND ping to link-local neighbours at %lu with seq=%u\n",
-            (unsigned long) clock_time(), global_sequence);
+    LOG_INFO("Sending ND ping to link-local neighbours at %lu with seq=%d\n",
+            (unsigned long) clock_time(), new_ping.sequence);
 
     // TX the token to link-local nodes
     uip_ipaddr_copy(&nd_bcast_conn->ripaddr, &nd_ll_ipaddr);
@@ -229,14 +249,31 @@ tx_neighbourhood_ping(void) {
 
 /*---------------------------------------------------------------------------*/
 void
-tx_neighbourhood_ping_response(unsigned int new_sequence, const uip_ipaddr_t *sender) {
+tx_neighbourhood_ping_response(const uip_ipaddr_t *sender) {
     LOG_INFO("Sending ping response to ");
     LOG_INFO_6ADDR(sender);
     LOG_INFO_(" at %lu\n", (unsigned long) clock_time());
 
+    nbr_buf_item_t *item = neighbour_cache_item(sender);
+
+    if (item == NULL) {
+        LOG_ERR("Failed to find neighbour cache item for ");
+        LOG_ERR_6ADDR(sender);
+        LOG_ERR_(" when TXing ND response\n");
+
+        return;
+    }
+
+    // Increment the sequence number by 2 because we've recv'd a msg already and are about to send a new one
+    item->sequence_no = max(2, item->sequence_no + 2);
+
+    LOG_INFO("Response sequence number = %d for ip ", item->sequence_no);
+    LOG_INFO_6ADDR(sender);
+    LOG_INFO_("\n");
+
     nd_pkt_t new_ping = {
             .is_response = true,
-            .sequence = global_sequence
+            .sequence = item->sequence_no
     };
     uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
 
