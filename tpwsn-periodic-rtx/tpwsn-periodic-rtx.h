@@ -54,7 +54,7 @@
 /** \brief A wrapping packet structure to handle TPWSN routing */
 typedef struct tpwsn_pkt_s {
     struct tpwsn_pkt_s *next;
-    uip_ipaddr_t dest;
+    uip_ipaddr_t sender;
     unsigned int msg_uid;
     unsigned char* data;
 } tpwsn_pkt_t;

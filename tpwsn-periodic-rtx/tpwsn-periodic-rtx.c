@@ -167,11 +167,17 @@ is_msg_in_buf(const tpwsn_pkt_t *msg) {
 /*---------------------------------------------------------------------------*/
 static bool
 prtx_neighbour_refresh() {
+    LOG_INFO("Starting PRTX Refresh\n");
+
     nbr_buf_item_t *item = (nbr_buf_item_t *) list_head(*prtx_neighbours);
     bool success = false;
 
     while (item != NULL) {
         if (!neighbour_in_msg_map(&item->ipaddr)) {
+            LOG_INFO("Neighbour ");
+            LOG_INFO_6ADDR(&item->ipaddr);
+            LOG_INFO_(" not in msg_map, adding them\n");
+
             tpwsn_map_t *map_item = (tpwsn_map_t *) malloc(sizeof(tpwsn_map_t));
 
             if (map_item == NULL) {
@@ -193,16 +199,19 @@ prtx_neighbour_refresh() {
 
 /*---------------------------------------------------------------------------*/
 static void
-broadcast_msg(const tpwsn_pkt_t *msg) {
-    // Rebroadcast if we aren't the destination
-    if (!uip_ip6addr_cmp(&uip_ds6_get_link_local(-1)->ipaddr, &(msg->dest))) {
-        // TX the token to link-local nodes
-        uip_ipaddr_copy(&prtx_bcast_conn->ripaddr, &prtx_ll_ipaddr);
-        uip_udp_packet_send(prtx_bcast_conn, msg, sizeof(tpwsn_pkt_t));
+broadcast_msg(tpwsn_pkt_t *msg) {
+    // Update the sender of the packet so we can keep track of the neighbours
+    // who have seen it
+    uip_ipaddr_copy(&msg->sender, &uip_ds6_get_link_local(-1)->ipaddr);
 
-        // Return to accepting incoming packets from any IP
-        uip_create_unspecified(&prtx_bcast_conn->ripaddr);
-    }
+    LOG_INFO("Sending message %u to link-local nodes\n", msg->msg_uid);
+
+    // TX the token to link-local nodes
+    uip_ipaddr_copy(&prtx_bcast_conn->ripaddr, &prtx_ll_ipaddr);
+    uip_udp_packet_send(prtx_bcast_conn, msg, sizeof(tpwsn_pkt_t));
+
+    // Return to accepting incoming packets from any IP
+    uip_create_unspecified(&prtx_bcast_conn->ripaddr);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -210,7 +219,13 @@ static void
 recv_pkt_handler() {
     if (uip_newdata()) {
         tpwsn_pkt_t *pkt = ((tpwsn_pkt_t *) uip_appdata);
-        uip_ipaddr_t remote_ip = prtx_bcast_conn->ripaddr;
+        uip_ipaddr_t remote_ip = pkt->sender;
+
+        LOG_INFO("Recv'd packet at time %lu from", (unsigned long) clock_time());
+        LOG_INFO_6ADDR(&remote_ip);
+        LOG_INFO_("\n");
+
+        print_nbr_buf();
 
         if (!is_msg_in_buf(pkt)) {
             // Copy the packet to our own memory and add it to the list
@@ -244,10 +259,17 @@ recv_pkt_handler() {
             msg_item->last_sent = (unsigned long) clock_time();
             msg_item->msg_uid = pkt->msg_uid;
 
+            LOG_INFO("Getting map entry for IP ");
+            LOG_INFO_6ADDR(&remote_ip);
+            LOG_INFO_("\n");
+
+
             tpwsn_map_t *map_entry = get_item_for_addr(&remote_ip);
 
             if (map_entry == NULL) {
-                LOG_ERR("Failed to locate neighbour entry for IP\n");
+                LOG_ERR("Failed to locate neighbour entry for IP ");
+                LOG_ERR_6ADDR(&remote_ip);
+                LOG_ERR_("\n");
 
                 return;
             }
@@ -314,7 +336,7 @@ PROCESS_THREAD(periodic_rtx_process, ev, data) {
                             broadcast_msg(queue_peek(msg_buffer));
 
                             // Periodically re-broadcast the message if there's a neighbour that doesn't have it yet
-                            etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD);
+                            etimer_set(&prtx_timer, TPWSN_PRTX_PERIOD + ((random_rand() % 5) * CLOCK_SECOND));
                         } else {
                             // Remove the packet from the queue and free the memory
                             tpwsn_pkt_t *old_pkt = (tpwsn_pkt_t *) queue_dequeue(msg_buffer);

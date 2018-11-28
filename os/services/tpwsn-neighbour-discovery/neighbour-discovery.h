@@ -100,6 +100,7 @@ void tpwsn_neighbour_discovery_init(void);
 
 void tx_neighbourhood_ping(void);
 void tx_neighbourhood_ping_response(const uip_ipaddr_t*);
+void print_nbr_buf(void);
 
 /**
  * Access the ND buffer

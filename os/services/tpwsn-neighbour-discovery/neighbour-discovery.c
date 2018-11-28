@@ -68,6 +68,23 @@ nd_neighbour_list(void) {
     return (const list_t *) &neighbour_buf;
 }
 /*---------------------------------------------------------------------------*/
+void
+print_nbr_buf(void) {
+    nbr_buf_item_t *item = list_head(neighbour_buf);
+
+    LOG_INFO("NBR cache: {");
+
+    while (item != NULL) {
+        LOG_INFO_("(");
+        LOG_INFO_6ADDR(&item->ipaddr);
+        LOG_INFO_(", %d), ", item->sequence_no);
+
+        item = list_item_next(item);
+    }
+
+    LOG_INFO_("}\n");
+}
+/*---------------------------------------------------------------------------*/
 static nbr_buf_item_t *
 neighbour_cache_item(const uip_ipaddr_t *ipaddr) {
     nbr_buf_item_t *item = list_head(neighbour_buf);
@@ -92,9 +109,12 @@ tpwsn_tcpip_handler(void) {
         nd_pkt_t *pkt = ((nd_pkt_t *) uip_appdata);
         uip_ipaddr_t remote_ip = pkt->ipaddr;
 
+        // TODO: Figure out why there's an issue with memory corruption - could be to
+        // do with an offset from the uip_appdata pointer?
+
         LOG_INFO("Recv'd ND packet from ");
         LOG_INFO_6ADDR(&remote_ip);
-        LOG_INFO_(" at time %lu\n", (unsigned long) clock_time());
+        LOG_INFO_(" at time %lu with sequence %d\n", (unsigned long) clock_time(), pkt->sequence);
 
         nbr_buf_item_t *sender = neighbour_cache_item(&remote_ip);
 
@@ -204,10 +224,14 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
         }
 
         if (etimer_expired(&nd_timer)) {
+            LOG_INFO("Sending next ND ping\n");
+
             tx_neighbourhood_ping();
         }
 
         process_nd_response_queue();
+
+        LOG_INFO("Scheduling next ND period\n");
 
         etimer_set(&nd_timer, TPWSN_ND_PERIOD + ((random_rand() % 10) * CLOCK_SECOND));
 
@@ -230,14 +254,23 @@ PROCESS_THREAD(tpwsn_neighbour_discovery_process, ev, data) {
 /*---------------------------------------------------------------------------*/
 void
 tx_neighbourhood_ping(void) {
-    nd_pkt_t new_ping = {
-            .is_response = false,
-            .sequence = -1
-    };
-    uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
+    nd_pkt_t *new_ping = (nd_pkt_t *) malloc(sizeof(nd_pkt_t));
+
+    if (new_ping == NULL) {
+        LOG_ERR("Failed to allocate LL-bcast ping packet\n");
+        return;
+    }
+
+    new_ping->is_response = false;
+    new_ping->sequence = -1;
+    uip_ipaddr_copy(&new_ping->ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
+
+    LOG_INFO("IPADDR: ");
+    LOG_INFO_6ADDR(&new_ping->ipaddr);
+    LOG_INFO_("\n");
 
     LOG_INFO("Sending ND ping to link-local neighbours at %lu with seq=%d\n",
-            (unsigned long) clock_time(), new_ping.sequence);
+            (unsigned long) clock_time(), new_ping->sequence);
 
     // TX the token to link-local nodes
     uip_ipaddr_copy(&nd_bcast_conn->ripaddr, &nd_ll_ipaddr);
@@ -245,6 +278,9 @@ tx_neighbourhood_ping(void) {
 
     // Return to accepting incoming packets from any IP
     uip_create_unspecified(&nd_bcast_conn->ripaddr);
+
+    // Free the packet since it's been BCast now and doesn't need RTX
+    free(new_ping);
 }
 
 /*---------------------------------------------------------------------------*/
