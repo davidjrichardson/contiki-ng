@@ -263,7 +263,6 @@ recv_pkt_handler() {
             LOG_INFO_6ADDR(&remote_ip);
             LOG_INFO_("\n");
 
-
             tpwsn_map_t *map_entry = get_item_for_addr(&remote_ip);
 
             if (map_entry == NULL) {
@@ -273,6 +272,8 @@ recv_pkt_handler() {
 
                 return;
             }
+
+            LOG_INFO("Got map entry\n");
 
             list_add(*(map_entry->msg_ids), msg_item);
         }

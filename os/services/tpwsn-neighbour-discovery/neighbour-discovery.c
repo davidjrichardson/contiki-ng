@@ -109,9 +109,6 @@ tpwsn_tcpip_handler(void) {
         nd_pkt_t *pkt = ((nd_pkt_t *) uip_appdata);
         uip_ipaddr_t remote_ip = pkt->ipaddr;
 
-        // TODO: Figure out why there's an issue with memory corruption - could be to
-        // do with an offset from the uip_appdata pointer?
-
         LOG_INFO("Recv'd ND packet from ");
         LOG_INFO_6ADDR(&remote_ip);
         LOG_INFO_(" at time %lu with sequence %d\n", (unsigned long) clock_time(), pkt->sequence);
@@ -274,7 +271,7 @@ tx_neighbourhood_ping(void) {
 
     // TX the token to link-local nodes
     uip_ipaddr_copy(&nd_bcast_conn->ripaddr, &nd_ll_ipaddr);
-    uip_udp_packet_send(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t));
+    uip_udp_packet_send(nd_bcast_conn, new_ping, sizeof(nd_pkt_t));
 
     // Return to accepting incoming packets from any IP
     uip_create_unspecified(&nd_bcast_conn->ripaddr);
@@ -307,17 +304,24 @@ tx_neighbourhood_ping_response(const uip_ipaddr_t *sender) {
     LOG_INFO_6ADDR(sender);
     LOG_INFO_("\n");
 
-    nd_pkt_t new_ping = {
-            .is_response = true,
-            .sequence = item->sequence_no
-    };
-    uip_ipaddr_copy(&new_ping.ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
+    nd_pkt_t *new_ping = (nd_pkt_t *) malloc(sizeof(nd_pkt_t));
+
+    if (new_ping == NULL) {
+        LOG_ERR("Failed to allocate LL-bcast ping response packet\n");
+        return;
+    }
+
+    new_ping->is_response = true;
+    new_ping->sequence = item->sequence_no;
+    uip_ipaddr_copy(&new_ping->ipaddr, &uip_ds6_get_link_local(-1)->ipaddr);
 
     uip_ipaddr_copy(&nd_bcast_conn->ripaddr, sender);
-    uip_udp_packet_send(nd_bcast_conn, &new_ping, sizeof(nd_pkt_t));
+    uip_udp_packet_send(nd_bcast_conn, new_ping, sizeof(nd_pkt_t));
 
     // Return to accepting incoming packets from any IP
     uip_create_unspecified(&nd_bcast_conn->ripaddr);
+
+    free(new_ping);
 }
 /*---------------------------------------------------------------------------*/
 void
