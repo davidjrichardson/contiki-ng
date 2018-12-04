@@ -89,6 +89,10 @@ get_item_for_addr(const uip_ipaddr_t *ipaddr) {
 /*---------------------------------------------------------------------------*/
 static bool
 neighbour_in_msg_map(const uip_ipaddr_t *neighbour) {
+    if(uip_is_addr_unspecified(sender)) {
+        return false;
+    }
+
     tpwsn_map_t *item = list_head(neighbour_msg_map);
 
     while (item != NULL) {
@@ -105,6 +109,11 @@ neighbour_in_msg_map(const uip_ipaddr_t *neighbour) {
 /*---------------------------------------------------------------------------*/
 static bool
 neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
+    // TODO: Compare sender to ::
+    if(uip_is_addr_unspecified(sender)) {
+        return false;
+    }
+
     tpwsn_map_t *map_item = list_head(neighbour_msg_map);
 
     while (map_item != NULL) {
@@ -214,7 +223,7 @@ recv_pkt_handler() {
         tpwsn_pkt_t *pkt = ((tpwsn_pkt_t *) uip_appdata);
         uip_ipaddr_t remote_ip = prtx_bcast_conn->ripaddr;
 
-        print_nbr_buf();
+//        print_nbr_buf();
 
         if (!is_msg_in_buf(pkt)) {
             // Copy the packet to our own memory and add it to the list

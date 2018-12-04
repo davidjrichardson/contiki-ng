@@ -106,23 +106,31 @@ neighbour_in_msg_map(const uip_ipaddr_t *neighbour) {
 /*---------------------------------------------------------------------------*/
 static bool
 neighbour_has_msg(const tpwsn_pkt_t *msg, const uip_ipaddr_t *sender) {
-    tpwsn_map_t *map_item = list_head(neighbour_msg_map);
-
-    while (map_item != NULL) {
-        if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender) && map_item->msg_ids != NULL) {
-            tpwsn_map_msg_t *msg_item = (tpwsn_map_msg_t *) list_head(map_item->msg_ids);
-
-            while (msg_item != NULL) {
-                if (msg_item->msg_uid == msg->msg_uid) {
-                    return true;
-                }
-
-                msg_item = (tpwsn_map_msg_t *) list_item_next(msg_item);
-            }
-        }
-
-        map_item = (tpwsn_map_t *) list_item_next(map_item);
-    }
+//    tpwsn_map_t *map_item = (tpwsn_map_t *) list_head(neighbour_msg_map);
+//
+//    while (map_item != NULL) {
+//        LOG_INFO("Map item for ");
+//        LOG_INFO_6ADDR(&map_item->ipaddr);
+//        LOG_INFO_("\n");
+//
+//        if (uip_ip6addr_cmp((void *) &(map_item->ipaddr), (void *) sender) && map_item->msg_ids_list != NULL) {
+//            LOG_INFO("Iterating over messages f or ");
+//            LOG_INFO_6ADDR(&map_item->ipaddr);
+//            LOG_INFO_("\n");
+//
+//            tpwsn_map_msg_t *msg_item = (tpwsn_map_msg_t *) list_head(map_item->msg_ids_list);
+//
+//            while (msg_item != NULL) {
+//                if (msg_item->msg_uid == msg->msg_uid) {
+//                    return true;
+//                }
+//
+//                msg_item = (tpwsn_map_msg_t *) list_item_next(msg_item);
+//            }
+//        }
+//
+//        map_item = (tpwsn_map_t *) list_item_next(map_item);
+//    }
 
     return false;
 }
@@ -225,7 +233,7 @@ recv_pkt_handler() {
         LOG_INFO_6ADDR(&remote_ip);
         LOG_INFO_("\n");
 
-        print_nbr_buf();
+//        print_nbr_buf();
 
         if (!is_msg_in_buf(pkt)) {
             // Copy the packet to our own memory and add it to the list
@@ -275,7 +283,7 @@ recv_pkt_handler() {
 
             LOG_INFO("Got map entry\n");
 
-            list_add(*(map_entry->msg_ids), msg_item);
+            list_add(map_entry->msg_ids_list, msg_item);
         }
     }
 }
