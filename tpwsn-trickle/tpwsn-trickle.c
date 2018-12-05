@@ -35,20 +35,28 @@
 #include "contiki-lib.h"
 #include "contiki-net.h"
 
+#include "dev/serial-line.h"
+
 #include "lib/trickle-timer.h"
 #include "lib/random.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #define DEBUG DEBUG_PRINT
+
+#include "sys/log.h"
+
+#define LOG_MODULE "TPWSN-TRICKLE"
+#define LOG_LEVEL LOG_LEVEL_INFO
 
 #include "net/ipv6/uip-debug.h"
 
 /* Trickle variables and constants */
 static struct trickle_timer tt;
 
-#define IMIN               16   /* ticks */
-#define IMAX               10   /* doublings */
+#define IMIN               128   /* ticks */
+#define IMAX               3   /* doublings */
 #define REDUNDANCY_CONST    2
 
 /* Networking */
@@ -69,7 +77,7 @@ static uip_ipaddr_t ipaddr;     /* destination: link-local all-nodes multicast *
  * Every NEW_TOKEN_INTERVAL clock ticks each node will generate a new token
  * with probability 1/NEW_TOKEN_PROB. This is controlled by etimer et.
  */
-#define NEW_TOKEN_INTERVAL  10 * CLOCK_SECOND
+#define NEW_TOKEN_INTERVAL  15 * CLOCK_SECOND
 #define NEW_TOKEN_PROB      2
 static uint8_t token;
 static struct etimer et; /* Used to periodically generate inconsistencies */
@@ -141,6 +149,52 @@ trickle_tx(void *ptr, uint8_t suppress) {
     /* Restore to 'accept incoming from any IP' */
     uip_create_unspecified(&trickle_conn->ripaddr);
 }
+
+/*---------------------------------------------------------------------------*/
+static void
+trickle_init() {
+    token = 0;
+
+    trickle_timer_config(&tt, IMIN, IMAX, REDUNDANCY_CONST);
+    trickle_timer_set(&tt, trickle_tx, &tt);
+    /*
+     * At this point trickle is started and is running the first interval. All
+     * nodes 'agree' that token == 0. This will change when one of them randomly
+     * decides to generate a new one
+     */
+    etimer_set(&et, NEW_TOKEN_INTERVAL);
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+serial_handler(char *data) {
+    char *ptr = strtok(data, " ");
+    char *endptr;
+    bool seen_s = false;
+    long delay = 0;
+
+    // Iterate over the tokenised string
+    while (ptr != NULL) {
+        if (strcmp(ptr, "s")) {
+            seen_s = true;
+        }
+        if (seen_s) {
+            delay = strtol(ptr, &endptr, 10);
+        }
+        ptr = strtok(NULL, " ");
+    }
+
+    if (seen_s) {
+        LOG_INFO("Restarting with delay of %ld ticks\n", delay);
+    }
+
+    NETSTACK_RADIO.off();
+    // TODO: Delay for {time} clock ticks after turning off the radio
+
+    // Reset the internal trickle state to emulate power loss
+    trickle_init();
+    NETSTACK_RADIO.on();
+}
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(trickle_protocol_process, ev, data) {
     PROCESS_BEGIN();
@@ -155,21 +209,14 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                 PRINTF("Connection: local/remote port %u/%u\n",
                        UIP_HTONS(trickle_conn->lport), UIP_HTONS(trickle_conn->rport));
 
-                token = 0;
-
-                trickle_timer_config(&tt, IMIN, IMAX, REDUNDANCY_CONST);
-                trickle_timer_set(&tt, trickle_tx, &tt);
-                /*
-                 * At this point trickle is started and is running the first interval. All
-                 * nodes 'agree' that token == 0. This will change when one of them randomly
-                 * decides to generate a new one
-                 */
-                etimer_set(&et, NEW_TOKEN_INTERVAL);
+                trickle_init();
 
                 while (1) {
                     PROCESS_YIELD();
                     if (ev == tcpip_event) {
                         tcpip_handler();
+                    } else if (ev == serial_line_event_message && data != NULL) {
+                        serial_handler(data);
                     } else if (etimer_expired(&et)) {
                         /* Periodically (and randomly) generate a new token. This will trigger
                          * a trickle inconsistency */
