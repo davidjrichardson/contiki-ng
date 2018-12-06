@@ -42,6 +42,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define DEBUG DEBUG_PRINT
 
@@ -55,14 +56,15 @@
 /* Trickle variables and constants */
 static struct trickle_timer tt;
 
-#define IMIN               128   /* ticks */
-#define IMAX               3   /* doublings */
+#define IMIN               16   /* ticks */
+#define IMAX               10   /* doublings */
 #define REDUNDANCY_CONST    2
 
 /* Networking */
 #define TRICKLE_PROTO_PORT 30001
 static struct uip_udp_conn *trickle_conn;
 static uip_ipaddr_t ipaddr;     /* destination: link-local all-nodes multicast */
+static bool suppress_trickle = false;
 
 /*
  * For this 'protocol', nodes exchange a token (1 byte) at a frequency
@@ -77,10 +79,11 @@ static uip_ipaddr_t ipaddr;     /* destination: link-local all-nodes multicast *
  * Every NEW_TOKEN_INTERVAL clock ticks each node will generate a new token
  * with probability 1/NEW_TOKEN_PROB. This is controlled by etimer et.
  */
-#define NEW_TOKEN_INTERVAL  15 * CLOCK_SECOND
+#define NEW_TOKEN_INTERVAL  5 * CLOCK_SECOND
 #define NEW_TOKEN_PROB      2
 static uint8_t token;
 static struct etimer et; /* Used to periodically generate inconsistencies */
+static struct etimer rt; /* Used to 'restart' the node  */
 /*---------------------------------------------------------------------------*/
 PROCESS(trickle_protocol_process, "Trickle Protocol process");
 AUTOSTART_PROCESSES(&trickle_protocol_process);
@@ -128,7 +131,7 @@ trickle_tx(void *ptr, uint8_t suppress) {
      * and cast it to a local struct trickle_timer* */
     struct trickle_timer *loc_tt = (struct trickle_timer *) ptr;
 
-    if (suppress == TRICKLE_TIMER_TX_SUPPRESS) {
+    if (suppress == TRICKLE_TIMER_TX_SUPPRESS || suppress_trickle) {
         return;
     }
 
@@ -154,6 +157,7 @@ trickle_tx(void *ptr, uint8_t suppress) {
 static void
 trickle_init() {
     token = 0;
+    suppress_trickle = false;
 
     trickle_timer_config(&tt, IMIN, IMAX, REDUNDANCY_CONST);
     trickle_timer_set(&tt, trickle_tx, &tt);
@@ -184,13 +188,17 @@ serial_handler(char *data) {
         ptr = strtok(NULL, " ");
     }
 
-    if (seen_s) {
+    if (seen_s && delay > 0) {
         LOG_INFO("Restarting with delay of %ld ticks\n", delay);
+
+        NETSTACK_RADIO.off();
+        etimer_set(&rt, delay);
+        suppress_trickle = true;
     }
-
-    NETSTACK_RADIO.off();
-    // TODO: Delay for {time} clock ticks after turning off the radio
-
+}
+/*---------------------------------------------------------------------------*/
+static void
+restart_node(void) {
     // Reset the internal trickle state to emulate power loss
     trickle_init();
     NETSTACK_RADIO.on();
@@ -227,6 +235,9 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                             trickle_timer_reset_event(&tt);
                         }
                         etimer_set(&et, NEW_TOKEN_INTERVAL);
+                    } else if (etimer_expired(&rt)) {
+                        LOG_INFO("Restarting node at time %lu\n", (unsigned long) clock_time());
+                        restart_node();
                     }
                 }
     PROCESS_END();
