@@ -65,6 +65,8 @@ static struct trickle_timer tt;
 static struct uip_udp_conn *trickle_conn;
 static uip_ipaddr_t ipaddr;     /* destination: link-local all-nodes multicast */
 static bool suppress_trickle = false;
+static bool is_source = false;
+static bool is_sink = false;
 
 /*
  * For this 'protocol', nodes exchange a token (1 byte) at a frequency
@@ -92,19 +94,25 @@ AUTOSTART_PROCESSES(&trickle_protocol_process);
 static void
 tcpip_handler(void) {
     if (uip_newdata()) {
-        PRINTF("At %lu (I=%lu, c=%u): ",
+        // Print out that the sink received a token at time
+        if (is_sink) {
+            LOG_INFO("Received token 0x%02x at %lu\n",
+                    ((uint8_t *) uip_appdata)[0],
+                    (unsigned long) clock_time());
+        }
+        LOG_INFO("At %lu (I=%lu, c=%u): ",
                (unsigned long) clock_time(), (unsigned long) tt.i_cur, tt.c);
-        PRINTF("Our token=0x%02x, theirs=0x%02x\n", token,
+        LOG_INFO("Our token=0x%02x, theirs=0x%02x\n", token,
                ((uint8_t *) uip_appdata)[0]);
         if (token == ((uint8_t *) uip_appdata)[0]) {
-            PRINTF("Consistent RX\n");
+            LOG_INFO("Consistent RX\n");
             trickle_timer_consistency(&tt);
         } else {
             if ((signed char) (token - ((uint8_t *) uip_appdata)[0]) < 0) {
-                PRINTF("Theirs is newer. Update\n");
+                LOG_INFO("Theirs is newer. Update\n");
                 token = ((uint8_t *) uip_appdata)[0];
             } else {
-                PRINTF("They are behind\n");
+                LOG_INFO("They are behind\n");
             }
             trickle_timer_inconsistency(&tt);
 
@@ -113,7 +121,7 @@ tcpip_handler(void) {
              * current interval. However, between t and I it points to the interval's
              * end so if you're going to use this, do so with caution.
              */
-            PRINTF("At %lu: Trickle inconsistency. Scheduled TX for %lu\n",
+            LOG_INFO("At %lu: Trickle inconsistency. Scheduled TX for %lu\n",
                    (unsigned long) clock_time(),
                    (unsigned long) (tt.ct.etimer.timer.start +
                                     tt.ct.etimer.timer.interval));
@@ -135,10 +143,10 @@ trickle_tx(void *ptr, uint8_t suppress) {
         return;
     }
 
-    PRINTF("At %lu (I=%lu, c=%u): ",
+    LOG_INFO("At %lu (I=%lu, c=%u): ",
            (unsigned long) clock_time(), (unsigned long) loc_tt->i_cur,
            loc_tt->c);
-    PRINTF("Trickle TX token 0x%02x\n", token);
+    LOG_INFO("Trickle TX token 0x%02x\n", token);
 
     /* Instead of changing ->ripaddr around by ourselves, we could have used
      * uip_udp_packet_sendto which would have done it for us. However it puts an
@@ -174,21 +182,36 @@ static void
 serial_handler(char *data) {
     char *ptr = strtok(data, " ");
     char *endptr;
-    bool seen_s = false;
     long delay = 0;
+    bool seen_sleep = false;
+    bool seen_set = false;
 
     // Iterate over the tokenised string
     while (ptr != NULL) {
-        if (strcmp(ptr, "s")) {
-            seen_s = true;
+        // Parse serial input for restarting a node
+        if (strcmp(ptr, "sleep")) {
+            seen_sleep = true;
         }
-        if (seen_s) {
+        if (seen_sleep) {
             delay = strtol(ptr, &endptr, 10);
         }
+
+        // Parse serial input to set a node as a sink or source
+        if (strcmp(ptr, "set")) {
+            seen_set = true;
+        }
+        if (seen_set) {
+            if (strcmp(ptr, "sink")) {
+                is_sink = true;
+            } else if (strcmp(ptr, "source")) {
+                is_source = true;
+            }
+        }
+
         ptr = strtok(NULL, " ");
     }
 
-    if (seen_s && delay > 0) {
+    if (seen_sleep && delay > 0) {
         LOG_INFO("Restarting with delay of %ld ticks\n", delay);
 
         NETSTACK_RADIO.off();
@@ -196,6 +219,7 @@ serial_handler(char *data) {
         suppress_trickle = true;
     }
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 restart_node(void) {
@@ -207,14 +231,14 @@ restart_node(void) {
 PROCESS_THREAD(trickle_protocol_process, ev, data) {
     PROCESS_BEGIN();
 
-                PRINTF("Trickle protocol started\n");
+                LOG_INFO("Trickle protocol started\n");
 
                 uip_create_linklocal_allnodes_mcast(&ipaddr); /* Store for later */
 
                 trickle_conn = udp_new(NULL, UIP_HTONS(TRICKLE_PROTO_PORT), NULL);
                 udp_bind(trickle_conn, UIP_HTONS(TRICKLE_PROTO_PORT));
 
-                PRINTF("Connection: local/remote port %u/%u\n",
+                LOG_INFO("Connection: local/remote port %u/%u\n",
                        UIP_HTONS(trickle_conn->lport), UIP_HTONS(trickle_conn->rport));
 
                 trickle_init();
@@ -225,12 +249,13 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                         tcpip_handler();
                     } else if (ev == serial_line_event_message && data != NULL) {
                         serial_handler(data);
-                    } else if (etimer_expired(&et)) {
+                    } else if (etimer_expired(&et) && is_source) {
                         /* Periodically (and randomly) generate a new token. This will trigger
                          * a trickle inconsistency */
+                        // Will only trigger a new token if the node is marked as a source node
                         if ((random_rand() % NEW_TOKEN_PROB) == 0) {
                             token++;
-                            PRINTF("At %lu: Generating a new token 0x%02x\n",
+                            LOG_INFO("At %lu: Generating a new token 0x%02x\n",
                                    (unsigned long) clock_time(), token);
                             trickle_timer_reset_event(&tt);
                         }
