@@ -8,13 +8,13 @@
 // but that wouldn't be a very nice way to do things.
 
 // TODO: Store the failed motes when they fail and remove them when they come back up
-// TODO: Specify the timeout and recovery delay in the script
 
 // The maximum number of nodes that can fail at once
 max_failure_count = 1
 // The recovery delay in clock ticks
 mote_recovery_delay = 500
 // The total simulation timeout
+simulation_timeout = 10000
 
 all_motes = sim.getMotes();
 failed_motes = new Array(max_failure_count);
@@ -42,8 +42,15 @@ for (var i = 0; i < all_motes.length; i++) {
     }
 }
 
+TIMEOUT(simulation_timeout, log.log("Simulation terminated"));
 while (true) {
     // TODO: This is where the main sim loop sits
     // Need to update and track the failed mote(s), as well as write the mote output
     // to file(s)
+
+    try {
+        YIELD();
+    } catch (e) {
+        throw("Simulation script killed")
+    }
 }
