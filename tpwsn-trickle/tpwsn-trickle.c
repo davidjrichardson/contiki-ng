@@ -67,6 +67,7 @@ static uip_ipaddr_t ipaddr;     /* destination: link-local all-nodes multicast *
 static bool suppress_trickle = false;
 static bool is_source = false;
 static bool is_sink = false;
+static bool reset_scheduled = false;
 
 /*
  * For this 'protocol', nodes exchange a token (1 byte) at a frequency
@@ -189,7 +190,7 @@ serial_handler(char *data) {
     // Iterate over the tokenised string
     while (ptr != NULL) {
         // Parse serial input for restarting a node
-        if (strcmp(ptr, "sleep")) {
+        if (strcmp(ptr, "sleep") == 0) {
             seen_sleep = true;
         }
         if (seen_sleep) {
@@ -201,10 +202,14 @@ serial_handler(char *data) {
             seen_set = true;
         }
         if (seen_set) {
-            if (strcmp(ptr, "sink")) {
+            if (strcmp(ptr, "sink") == 0) {
+                LOG_INFO("Setting node status to SINK\n");
                 is_sink = true;
-            } else if (strcmp(ptr, "source")) {
+                trickle_init();
+            } else if (strcmp(ptr, "source") == 0) {
+                LOG_INFO("Setting node status to SOURCE\n");
                 is_source = true;
+                trickle_init();
             }
         }
 
@@ -217,6 +222,7 @@ serial_handler(char *data) {
         NETSTACK_RADIO.off();
         etimer_set(&rt, delay);
         suppress_trickle = true;
+        reset_scheduled = true;
     }
 }
 
@@ -225,6 +231,8 @@ static void
 restart_node(void) {
     // Reset the internal trickle state to emulate power loss
     trickle_init();
+    etimer_stop(&rt);
+    reset_scheduled = false;
     NETSTACK_RADIO.on();
 }
 /*---------------------------------------------------------------------------*/
@@ -260,7 +268,7 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                             trickle_timer_reset_event(&tt);
                         }
                         etimer_set(&et, NEW_TOKEN_INTERVAL);
-                    } else if (etimer_expired(&rt)) {
+                    } else if (etimer_expired(&rt) && reset_scheduled) {
                         LOG_INFO("Restarting node at time %lu\n", (unsigned long) clock_time());
                         restart_node();
                     }
