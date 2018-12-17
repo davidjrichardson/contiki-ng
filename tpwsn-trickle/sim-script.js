@@ -42,7 +42,7 @@ log.log("snk: " + sink_node + "\n");
 // Create a failable motes array
 failable_motes = new Array(all_motes.length - 2);
 for (var i = 0; i < all_motes.length; i++) {
-    if (i != source_id | i != sink_id) {
+    if (i != source_id && i != sink_id) {
         failable_motes.push(all_motes[i]);
     }
 }
