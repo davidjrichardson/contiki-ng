@@ -7,9 +7,6 @@
 // TODO: Figure out a way to write the output to a singular file - the output could be multiple
 // but that wouldn't be a very nice way to do things.
 // TODO: Store the failed motes when they fail and remove them when they come back up
-
-// Load a compatibility script to allow for file io - might not be necessary
-// on Flux.
 load("nashorn:mozilla_compat.js");
 importPackage(java.io);
 
@@ -22,6 +19,9 @@ mote_recovery_delay = 500
 outputs = new Object();
 // Simulation log file prefix
 file_prefix = "log_"
+
+// TODO: Create a way to initialise the vars in the firmware
+// using this script instead of compiling it
 
 all_motes = sim.getMotes();
 failed_motes = new Array(max_failure_count);
@@ -50,8 +50,6 @@ for (var i = 0; i < all_motes.length; i++) {
     }
 }
 
-log.log(failable_motes);
-
 GENERATE_MSG(2000, "start-sim");
 YIELD_THEN_WAIT_UNTIL(msg.equals("start-sim"));
 
@@ -66,17 +64,20 @@ while (true) {
     // to file(s)
 
     // Write the output for each mote to a file
-    // if (!outputs[id.toString()]) {
-    //     outputs[id.toString()] = new FileWriter(file_prefix + id + ".txt");
-    // }
-    // outputs[id.toString()].write(time + ";" + msg + "\n");
+    if (!outputs[id.toString()]) {
+        log.log("Opening file for id " + id.toString() + "\n");
+        outputs[id.toString()] = new FileWriter(file_prefix + id + ".txt");
+    }
+    
+    outputs[id.toString()].write(time + ";" + msg + "\n");
 
     try {
         YIELD();
     } catch (e) {
-        // for (var ids in outputs) {
-        //     outputs[ids].close();
-        // }
+        for (var ids in outputs) {
+            log.log("Closing filewriter for id " + ids + "\n");
+            outputs[ids].close();
+        }
 
         throw("Simulation script killed")
     }
