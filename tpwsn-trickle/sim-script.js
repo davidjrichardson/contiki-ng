@@ -8,7 +8,10 @@
 // but that wouldn't be a very nice way to do things.
 // TODO: Store the failed motes when they fail and remove them when they come back up
 
-// importPackage(java.io);
+// Load a compatibility script to allow for file io - might not be necessary
+// on Flux.
+load("nashorn:mozilla_compat.js");
+importPackage(java.io);
 
 // The maximum number of nodes that can fail at once
 max_failure_count = 1
