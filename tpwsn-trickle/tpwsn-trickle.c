@@ -55,10 +55,9 @@
 
 /* Trickle variables and constants */
 static struct trickle_timer tt;
-
-#define IMIN               16   /* ticks */
-#define IMAX               10   /* doublings */
-#define REDUNDANCY_CONST    2
+static long imin = 16;
+static long imax = 10;
+static long redundancy_const = 2;
 
 /* Networking */
 #define TRICKLE_PROTO_PORT 30001
@@ -96,15 +95,10 @@ static void
 tcpip_handler(void) {
     if (uip_newdata()) {
         // Print out that the sink received a token at time
-        if (is_sink) {
-            LOG_INFO("Received token 0x%02x at %lu\n",
-                    ((uint8_t *) uip_appdata)[0],
-                    (unsigned long) clock_time());
-        }
         LOG_INFO("At %lu (I=%lu, c=%u): ",
-               (unsigned long) clock_time(), (unsigned long) tt.i_cur, tt.c);
+                 (unsigned long) clock_time(), (unsigned long) tt.i_cur, tt.c);
         LOG_INFO("Our token=0x%02x, theirs=0x%02x\n", token,
-               ((uint8_t *) uip_appdata)[0]);
+                 ((uint8_t *) uip_appdata)[0]);
         if (token == ((uint8_t *) uip_appdata)[0]) {
             LOG_INFO("Consistent RX\n");
             trickle_timer_consistency(&tt);
@@ -123,9 +117,9 @@ tcpip_handler(void) {
              * end so if you're going to use this, do so with caution.
              */
             LOG_INFO("At %lu: Trickle inconsistency. Scheduled TX for %lu\n",
-                   (unsigned long) clock_time(),
-                   (unsigned long) (tt.ct.etimer.timer.start +
-                                    tt.ct.etimer.timer.interval));
+                     (unsigned long) clock_time(),
+                     (unsigned long) (tt.ct.etimer.timer.start +
+                                      tt.ct.etimer.timer.interval));
         }
     }
     return;
@@ -145,9 +139,9 @@ trickle_tx(void *ptr, uint8_t suppress) {
     }
 
     LOG_INFO("At %lu (I=%lu, c=%u): ",
-           (unsigned long) clock_time(), (unsigned long) loc_tt->i_cur,
-           loc_tt->c);
-    LOG_INFO("Trickle TX token 0x%02x\n", token);
+             (unsigned long) clock_time(), (unsigned long) loc_tt->i_cur,
+             loc_tt->c);
+    LOG_INFO_("Trickle TX token 0x%02x\n", token);
 
     /* Instead of changing ->ripaddr around by ourselves, we could have used
      * uip_udp_packet_sendto which would have done it for us. However it puts an
@@ -168,7 +162,7 @@ trickle_init() {
     token = 0;
     suppress_trickle = false;
 
-    trickle_timer_config(&tt, IMIN, IMAX, REDUNDANCY_CONST);
+    trickle_timer_config(&tt, imin, imax, redundancy_const);
     trickle_timer_set(&tt, trickle_tx, &tt);
     /*
      * At this point trickle is started and is running the first interval. All
@@ -186,9 +180,36 @@ serial_handler(char *data) {
     long delay = 0;
     bool seen_sleep = false;
     bool seen_set = false;
+    bool seen_init = false;
+    bool seen_imin = false;
+    bool seen_imax = false;
+    bool seen_cost = false;
 
     // Iterate over the tokenised string
     while (ptr != NULL) {
+        // Parse serial input to initialise trickle
+        if (strcmp(ptr, "init") == 0) {
+            LOG_INFO("Seen init\n");
+            seen_init = true;
+        }
+        if (seen_init) {
+            if (seen_imax && seen_imin && seen_cost) {
+                break;
+            } else if (seen_imin && seen_imax) {
+                LOG_INFO("Seen imax, imin -> setting redundancy cost\n");
+                redundancy_const = strtol(ptr, &endptr, 10);
+                seen_cost = true;
+            } else if (!seen_imax && !seen_imin) {
+                LOG_INFO("Seen neither imax, imin -> setting imax\n");
+                imax = strtol(ptr, &endptr, 10);
+                seen_imax = true;
+            } else if (seen_imax && !seen_imin) {
+                LOG_INFO("Seen only imax -> setting imin\n");
+                imin = strtol(ptr, &endptr, 10);
+                seen_imin = true;
+            }
+        }
+
         // Parse serial input for restarting a node
         if (strcmp(ptr, "sleep") == 0) {
             seen_sleep = true;
@@ -247,7 +268,7 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                 udp_bind(trickle_conn, UIP_HTONS(TRICKLE_PROTO_PORT));
 
                 LOG_INFO("Connection: local/remote port %u/%u\n",
-                       UIP_HTONS(trickle_conn->lport), UIP_HTONS(trickle_conn->rport));
+                         UIP_HTONS(trickle_conn->lport), UIP_HTONS(trickle_conn->rport));
 
                 trickle_init();
 
@@ -264,7 +285,7 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                         if ((random_rand() % NEW_TOKEN_PROB) == 0) {
                             token++;
                             LOG_INFO("At %lu: Generating a new token 0x%02x\n",
-                                   (unsigned long) clock_time(), token);
+                                     (unsigned long) clock_time(), token);
                             trickle_timer_reset_event(&tt);
                         }
                         etimer_set(&et, NEW_TOKEN_INTERVAL);
