@@ -58,6 +58,7 @@ static struct trickle_timer tt;
 static long imin = 16;
 static long imax = 10;
 static long redundancy_const = 2;
+static long msg_limit = 1;
 
 /* Networking */
 #define TRICKLE_PROTO_PORT 30001
@@ -94,11 +95,19 @@ AUTOSTART_PROCESSES(&trickle_protocol_process);
 static void
 tcpip_handler(void) {
     if (uip_newdata()) {
-        // Print out that the sink received a token at time
-        LOG_INFO("At %lu (I=%lu, c=%u): ",
-                 (unsigned long) clock_time(), (unsigned long) tt.i_cur, tt.c);
-        LOG_INFO("Our token=0x%02x, theirs=0x%02x\n", token,
-                 ((uint8_t *) uip_appdata)[0]);
+        if (is_sink) {
+            // Print out that the sink received a token at time
+            LOG_INFO("Sink recv'd at %lu (I=%lu, c=%u): ",
+                     (unsigned long) clock_time(), (unsigned long) tt.i_cur, tt.c);
+            LOG_INFO("Our token=0x%02x, theirs=0x%02x\n", token,
+                     ((uint8_t *) uip_appdata)[0]);
+        } else {
+            // Print out that the sink received a token at time
+            LOG_INFO("At %lu (I=%lu, c=%u): ",
+                     (unsigned long) clock_time(), (unsigned long) tt.i_cur, tt.c);
+            LOG_INFO("Our token=0x%02x, theirs=0x%02x\n", token,
+                     ((uint8_t *) uip_appdata)[0]);
+        }
         if (token == ((uint8_t *) uip_appdata)[0]) {
             LOG_INFO("Consistent RX\n");
             trickle_timer_consistency(&tt);
@@ -184,30 +193,37 @@ serial_handler(char *data) {
     bool seen_imin = false;
     bool seen_imax = false;
     bool seen_cost = false;
+    bool seen_limit = false;
 
     // Iterate over the tokenised string
     while (ptr != NULL) {
         // Parse serial input to initialise trickle
         if (strcmp(ptr, "init") == 0) {
-            LOG_INFO("Seen init\n");
             seen_init = true;
         }
         if (seen_init) {
             if (seen_imax && seen_imin && seen_cost) {
                 break;
             } else if (seen_imin && seen_imax) {
-                LOG_INFO("Seen imax, imin -> setting redundancy cost\n");
                 redundancy_const = strtol(ptr, &endptr, 10);
                 seen_cost = true;
             } else if (!seen_imax && !seen_imin) {
-                LOG_INFO("Seen neither imax, imin -> setting imax\n");
                 imax = strtol(ptr, &endptr, 10);
                 seen_imax = true;
             } else if (seen_imax && !seen_imin) {
-                LOG_INFO("Seen only imax -> setting imin\n");
                 imin = strtol(ptr, &endptr, 10);
                 seen_imin = true;
             }
+        }
+
+        // Parse serial input for setting a source message limit
+        if (strcmp(ptr, "limit") == 0) {
+            LOG_INFO("Seen limit\n");
+            seen_limit = true;
+        }
+        if (seen_limit) {
+            msg_limit = strtol(ptr, &endptr, 10);
+            LOG_INFO("Setting limit to %ld\n", msg_limit);
         }
 
         // Parse serial input for restarting a node
@@ -282,7 +298,7 @@ PROCESS_THREAD(trickle_protocol_process, ev, data) {
                         /* Periodically (and randomly) generate a new token. This will trigger
                          * a trickle inconsistency */
                         // Will only trigger a new token if the node is marked as a source node
-                        if ((random_rand() % NEW_TOKEN_PROB) == 0) {
+                        if ((random_rand() % NEW_TOKEN_PROB) == 0 && token < msg_limit) {
                             token++;
                             LOG_INFO("At %lu: Generating a new token 0x%02x\n",
                                      (unsigned long) clock_time(), token);
