@@ -9,6 +9,10 @@
 // TODO: Store the failed motes when they fail and remove them when they come back up
 load("nashorn:mozilla_compat.js");
 importPackage(java.io);
+importPackage(java.util);
+
+// Java types
+var ArrayList = Java.type("java.util.ArrayList");
 
 // The maximum number of nodes that can fail at once
 var max_failure_count = 1;
@@ -66,10 +70,43 @@ write(sink_node, "set sink");
 
 TIMEOUT(10000, log.log("\n\nfoo\n"));
 
-function fail_nodes(failure_mode) {
-    if (failure_mode === "location") {
+/**
+ * Function to get the 1-hop neighbourhood of a given mote in the simulation
+ * @param mote - The mote that the neighbourhood is of
+ * @returns An ArrayList of motes that are in the 1-hop neighbourhood of mote
+ */
+function getNeighbourhood(mote) {
+    var position = mote.getInterfaces().getPosition();
+    var motes = sim.getMotes();
+
+    // Sort the motes based on distance to the current mote
+    Arrays.sort(motes, function (a, b) {
+        var keyA = position.getDistanceTo(a),
+            keyB = position.getDistanceTo(b);
+
+        return keyA - keyB;
+    });
+
+    // Filter the motes by transmission distance (50m) and make sure it's not the
+    // mote being called upon
+    var filteredMotes = new ArrayList();
+    for each (var m in motes) {
+        if (position.getDistanceTo(m) <= 50 && mote !== m) {
+            filteredMotes.add(m);
+        }
+    }
+
+    return filteredMotes;
+}
+
+/**
+ * A high-level function to fail node(s) in the simulation based on a specified failure mode
+ * @param failureMode - The failure mode (String) to determine how to fail node(s).
+ */
+function failNodes(failureMode) {
+    if (failureMode === "location") {
         // TODO: Pick a node to fail -- either 1 hop neighbour of current or a random node if not
-    } else if (failure_mode === "temporal") {
+    } else if (failureMode === "temporal") {
         // TODO: Pick a note at random and schedule another failure (with increased likelihood)
     }
 }
