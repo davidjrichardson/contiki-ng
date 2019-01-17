@@ -11,52 +11,68 @@ load("nashorn:mozilla_compat.js");
 importPackage(java.io);
 
 // The maximum number of nodes that can fail at once
-max_failure_count = 1
+var max_failure_count = 1;
 // The recovery delay in clock ticks
-mote_recovery_delay = 500
+var mote_recovery_delay = 500;
 
 // Simulation file output object
-outputs = new Object();
+var outputs = new Object();
 // Simulation log file prefix
-file_prefix = "log_"
+var file_prefix = "log_";
 
-// TODO: Create a way to initialise the vars in the firmware
-// using this script instead of compiling it
-
-all_motes = sim.getMotes();
-failed_motes = new Array(max_failure_count);
+var all_motes = sim.getMotes();
+var failed_motes = new Array(max_failure_count);
 
 // The source and sink node IDs - they cannot be the same.
-source_id = Math.floor(Math.random() * all_motes.length);
-sink_id = Math.floor(Math.random() * all_motes.length);
+var source_id = Math.floor(Math.random() * all_motes.length);
+var sink_id = Math.floor(Math.random() * all_motes.length);
 
 // Make sure that the source and sink aren't the same
-while (source_id == sink_id) {
+while (source_id === sink_id) {
    sink_id = Math.floor(Math.random() * all_motes.length);
 }
 
 // Actually get the mote(s) and tell them that they're these nodes
-source_node = all_motes[source_id];
-sink_node = all_motes[sink_id];
+var source_node = all_motes[source_id];
+var sink_node = all_motes[sink_id];
 
 log.log("src: " + source_node + "\n");
 log.log("snk: " + sink_node + "\n");
 
 // Create a failable motes array
-failable_motes = new Array(all_motes.length - 2);
+var failable_motes = new Array(all_motes.length - 2);
 for (var i = 0; i < all_motes.length; i++) {
-    if (i != source_id && i != sink_id) {
+    if (i !== source_id && i !== sink_id) {
         failable_motes.push(all_motes[i]);
     }
 }
+
+// TODO: When a failure occurs:
+// * Choose a set of nodes that are relevant to the failure mode
+// --> Location based: Pick from 1-hop neighbourhood of failed node (or random if none)
+// --> Temporal: Pick a node to fail at random
+// * Figure out if the failure would break network constraint(s)
+// --> Check if the neighbourhood of the node is going to partition
+// --> Check if there are any more nodes that are allowed to fail
+// * Choose node(s) to fail based on failure mode and number of nodes that are allowed to fail
+// --> If the failure mode is temporal, another failure should happen shortly
 
 GENERATE_MSG(2000, "start-sim");
 YIELD_THEN_WAIT_UNTIL(msg.equals("start-sim"));
 
 write(source_node, "set source");
+write(source_node, "limit 1");
 write(sink_node, "set sink");
 
 TIMEOUT(10000, log.log("\n\nfoo\n"));
+
+function fail_nodes(failure_mode) {
+    if (failure_mode === "location") {
+        // TODO: Pick a node to fail -- either 1 hop neighbour of current or a random node if not
+    } else if (failure_mode === "temporal") {
+        // TODO: Pick a note at random and schedule another failure (with increased likelihood)
+    }
+}
 
 while (true) {
     // TODO: This is where the main sim loop sits
