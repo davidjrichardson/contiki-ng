@@ -130,12 +130,17 @@ function failNode(failureMode) {
         var choice = random.nextInt(moteSet.size());
         var moteSetList = new ArrayList(moteSet);
         moteToFail = moteSetList.get(choice);
-    } else if (failureMode === "temporal") {
-
-        // TODO: Pick a note at random and schedule another failure (with increased likelihood)
-    } else if (failureMode === "random") {
+    } else {
         moteToFail = failableMotes.get(random.nextInt(failableMotes.size()));
     }
+
+    log.log("Selected mote to fail is: " + moteToFail + "\n");
+
+    // Restart the mote
+    var timeOfRestart = time + moteRecoveryDelay;
+    failedMotes.add(moteToFail);
+    failedMotesTime.add(timeOfRestart);
+    write(moteToFail, "sleep " + moteRecoveryDelay);
 }
 
 while (true) {
