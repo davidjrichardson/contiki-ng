@@ -11,11 +11,12 @@ importPackage(org.contikios.cooja.util);
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
 var HashSet = Java.type("java.util.HashSet");
+var ArrayDeque = Java.type("java.util.ArrayDeque");
 
 // The maximum number of nodes that can fail at once
 var maxFailureCount = 1;
 // The recovery delay in clock ticks
-var moteRecoveryDelay = 500;
+var moteRecoveryDelay = 5000;
 // The failure probability for a single node (1/this value)
 var moteFailureProbability = 100;
 
@@ -31,6 +32,7 @@ var filePrefix = "log_";
 
 var allMotes = sim.getMotes();
 var failedMotes = new ArrayList(maxFailureCount);
+var failedMotesTime = new ArrayList(maxFailureCount);
 
 // The source and sink node IDs - they cannot be the same.
 var sourceMoteID = Math.floor(Math.random() * allMotes.length);
@@ -56,6 +58,10 @@ for (var i = 0; i < allMotes.length; i++) {
     }
 }
 
+// Temporal failure mode-only variables
+var temporalProbability = 33;
+var temporalCrashDelay = 500;
+
 // Create the NodeGraph instance
 var nodeGraph = new NodeGraph(sim);
 
@@ -66,6 +72,13 @@ write(sourceMote, "set source");
 write(sourceMote, "limit 1");
 write(sinkMote, "set sink");
 
+var trickleIMin = 16;
+var trickleIMax = 10;
+var trickelRedundancyConst = 2;
+
+for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax + " " + trickelRedundancyConst);
+
+// TODO: Remove this timeout
 TIMEOUT(10000, log.log("\n\nfoo\n"));
 
 /**
@@ -141,10 +154,26 @@ while (true) {
     try {
         YIELD();
 
-        if (random.nextInt(moteFailureProbability) === 0) {
-            failNode(failureMode);
+        for (var i = 0; i < failedMotes.size(); i++) {
+            // If the node needs to be brought back online
+            if (time >= failedMotesTime.get(i)) {
+                // Remove the mote from the failed motes list -- wakeup is done on the mote
+                failedMotesTime.remove(i);
+                failedMotes.remove(i);
+            }
+        }
 
-            // TODO: Set up a timer if the failure mode is temporal
+        if (failureMode === "temporal") {
+            // TODO
+            // if (!failedMotes.isEmpty() && current) {
+            //     if (random.nextInt(temporalCrashDelay) === 0) {
+            //         failNode(failureMode);
+            //     }
+            // }
+        } else {
+            if (random.nextInt(moteFailureProbability) === 0) {
+                failNode(failureMode);
+            }
         }
     } catch (e) {
         for (var ids in outputs) {
