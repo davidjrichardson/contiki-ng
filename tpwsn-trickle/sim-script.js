@@ -10,70 +10,61 @@ importPackage(org.contikios.cooja.util);
 
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
+var HashSet = Java.type("java.util.HashSet");
 
 // The maximum number of nodes that can fail at once
-var max_failure_count = 1;
+var maxFailureCount = 1;
 // The recovery delay in clock ticks
-var mote_recovery_delay = 500;
+var moteRecoveryDelay = 500;
 // The failure probability for a single node (1/this value)
-var mote_failure_probability = 100;
+var moteFailureProbability = 100;
 
 // The random generator for failing motes (tied to the sim seed)
-var failure_rand = new Random(sim.getRandomSeed());
+var random = new Random(sim.getRandomSeed());
 // The failure mode for this simulation
-var failure_mode = "location";
+var failureMode = "location";
 
 // Simulation file output object
 var outputs = new Object();
 // Simulation log file prefix
-var file_prefix = "log_";
+var filePrefix = "log_";
 
-var all_motes = sim.getMotes();
-var failed_motes = new ArrayList(max_failure_count);
+var allMotes = sim.getMotes();
+var failedMotes = new ArrayList(maxFailureCount);
 
 // The source and sink node IDs - they cannot be the same.
-var source_id = Math.floor(Math.random() * all_motes.length);
-var sink_id = Math.floor(Math.random() * all_motes.length);
+var sourceMoteID = Math.floor(Math.random() * allMotes.length);
+var sinkMoteID = Math.floor(Math.random() * allMotes.length);
 
 // Make sure that the source and sink aren't the same
-while (source_id === sink_id) {
-   sink_id = Math.floor(Math.random() * all_motes.length);
+while (sourceMoteID === sinkMoteID) {
+   sinkMoteID = Math.floor(Math.random() * allMotes.length);
 }
 
 // Actually get the mote(s) and tell them that they're these nodes
-var source_node = all_motes[source_id];
-var sink_node = all_motes[sink_id];
+var sourceMote = allMotes[sourceMoteID];
+var sinkMote = allMotes[sinkMoteID];
 
-log.log("src: " + source_node + "\n");
-log.log("snk: " + sink_node + "\n");
+log.log("src: " + sourceMote + "\n");
+log.log("snk: " + sinkMote + "\n");
 
 // Create a failable motes array
-var failable_motes = new ArrayList(all_motes.length - 2);
-for (var i = 0; i < all_motes.length; i++) {
-    if (i !== source_id && i !== sink_id) {
-        failable_motes.push(all_motes[i]);
+var failableMotes = new ArrayList(allMotes.length - 2);
+for (var i = 0; i < allMotes.length; i++) {
+    if (i !== sourceMoteID && i !== sinkMoteID) {
+        failableMotes.push(allMotes[i]);
     }
 }
 
 // Create the NodeGraph instance
 var nodeGraph = new NodeGraph(sim);
 
-// TODO: When a failure occurs:
-// * Choose a set of nodes that are relevant to the failure mode
-// --> Location based: Pick from 1-hop neighbourhood of failed node (or random if none)
-// --> Temporal: Pick a node to fail at random
-// * Figure out if the failure would break network constraint(s)
-// --> Check if the neighbourhood of the node is going to partition
-// --> Check if there are any more nodes that are allowed to fail
-// * Choose node(s) to fail based on failure mode and number of nodes that are allowed to fail
-// --> If the failure mode is temporal, another failure should happen shortly
-
 GENERATE_MSG(2000, "start-sim");
 YIELD_THEN_WAIT_UNTIL(msg.equals("start-sim"));
 
-write(source_node, "set source");
-write(source_node, "limit 1");
-write(sink_node, "set sink");
+write(sourceMote, "set source");
+write(sourceMote, "limit 1");
+write(sinkMote, "set sink");
 
 TIMEOUT(10000, log.log("\n\nfoo\n"));
 
@@ -83,18 +74,54 @@ TIMEOUT(10000, log.log("\n\nfoo\n"));
  */
 function failNode(failureMode) {
     // Check if we can fail any more nodes and return early if not
-    if ((max_failure_count - failed_motes.length) > 0) {
+    if ((maxFailureCount - failedMotes.length) <= 0) {
         return;
     }
 
+    // TODO: When a failure occurs:
+    // * Choose a set of nodes that are relevant to the failure mode
+    // --> Location based: Pick from 1-hop neighbourhood of failed node (or random if none)
+    // --> Temporal: Pick a node to fail at random
+    // * Figure out if the failure would break network constraint(s)
+    // --> Check if the neighbourhood of the node is going to partition
+    // --> Check if there are any more nodes that are allowed to fail
+    // * Choose node(s) to fail based on failure mode and number of nodes that are allowed to fail
+    // --> If the failure mode is temporal, another failure should happen shortly
+
     // TODO: Log which mote(s) are being failed
+    var moteToFail;
 
     if (failureMode === "location") {
-        // TODO: Pick a node to fail -- either 1 hop neighbour of current or a random node if not
+        // Get a list of candidate motes to fail
+        var moteList = [];
+        if (failedMotes.length > 0) {
+            // Get a list of all 1-hop neighbours for all of the failed motes
+            // Duplicates don't matter since set operations later will clean them up
+            failedMotes.forEach(function(elem) {
+                moteList.concat(nodeGraph.get1HopNeighbours(elem));
+            });
+        } else {
+            moteList = failableMotes;
+        }
+
+        // Filter out any motes that have are already failed
+        var moteSet = new HashSet(moteList);
+        moteSet.removeAll(new HashSet(failedMotes));
+
+        // Cannot fail any more motes since the failable motes are all currently offline
+        if (moteSet.isEmpty()) {
+            return;
+        }
+
+        // Get a mote from the set
+        var choice = random.nextInt(moteSet.size());
+        var moteSetList = new ArrayList(moteSet);
+        moteToFail = moteSetList.get(choice);
     } else if (failureMode === "temporal") {
+
         // TODO: Pick a note at random and schedule another failure (with increased likelihood)
     } else if (failureMode === "random") {
-        // TODO: Just randomly pick a mote to crash
+        moteToFail = failableMotes.get(random.nextInt(failableMotes.size()));
     }
 }
 
@@ -106,7 +133,7 @@ while (true) {
     // Write the output for each mote to a file
     if (!outputs[id.toString()]) {
         log.log("Opening file for id " + id.toString() + "\n");
-        outputs[id.toString()] = new FileWriter(file_prefix + id + ".txt");
+        outputs[id.toString()] = new FileWriter(filePrefix + id + ".txt");
     }
     
     outputs[id.toString()].write(time + ";" + msg + "\n");
@@ -114,8 +141,10 @@ while (true) {
     try {
         YIELD();
 
-        if (failure_rand.nextInt(mote_failure_probability) === 0) {
-            failNode(failure_mode);
+        if (random.nextInt(moteFailureProbability) === 0) {
+            failNode(failureMode);
+
+            // TODO: Set up a timer if the failure mode is temporal
         }
     } catch (e) {
         for (var ids in outputs) {
