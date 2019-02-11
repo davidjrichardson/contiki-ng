@@ -36,6 +36,7 @@
 #include "contiki-net.h"
 
 #include "dev/serial-line.h"
+#include "dev/leds.h"
 
 #include "lib/trickle-timer.h"
 #include "lib/random.h"
@@ -260,6 +261,7 @@ serial_handler(char *data) {
         etimer_set(&rt, delay);
         suppress_trickle = true;
         reset_scheduled = true;
+        leds_on(LEDS_ALL);
     }
 }
 
@@ -271,6 +273,7 @@ restart_node(void) {
     etimer_stop(&rt);
     reset_scheduled = false;
     NETSTACK_RADIO.on();
+    leds_off(LEDS_ALL);
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(trickle_protocol_process, ev, data) {
