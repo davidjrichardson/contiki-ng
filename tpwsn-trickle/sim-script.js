@@ -7,6 +7,7 @@ load("nashorn:mozilla_compat.js");
 importPackage(java.io);
 importPackage(java.util);
 importPackage(org.contikios.cooja.util);
+importPackage(org.contikios.cooja.interfaces);
 
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
@@ -23,7 +24,7 @@ var moteFailureProbability = 100;
 // The random generator for failing motes (tied to the sim seed)
 var random = new Random(sim.getRandomSeed());
 // The failure mode for this simulation
-var failureMode = "location";
+var failureMode = "random";
 
 // Simulation file output object
 var outputs = new Object();
@@ -37,6 +38,7 @@ var failedMotesTime = new ArrayList(maxFailureCount);
 // The source and sink node IDs - they cannot be the same.
 var sourceMoteID = Math.floor(Math.random() * allMotes.length);
 var sinkMoteID = Math.floor(Math.random() * allMotes.length);
+var sourceMessageLimit = 1;
 
 // Make sure that the source and sink aren't the same
 while (sourceMoteID === sinkMoteID) {
@@ -54,7 +56,7 @@ log.log("snk: " + sinkMote + "\n");
 var failableMotes = new ArrayList(allMotes.length - 2);
 for (var i = 0; i < allMotes.length; i++) {
     if (i !== sourceMoteID && i !== sinkMoteID) {
-        failableMotes.push(allMotes[i]);
+        failableMotes.add(allMotes[i]);
     }
 }
 
@@ -69,17 +71,20 @@ GENERATE_MSG(2000, "start-sim");
 YIELD_THEN_WAIT_UNTIL(msg.equals("start-sim"));
 
 write(sourceMote, "set source");
-write(sourceMote, "limit 1");
+log.log("Initialising source with limit: " + sourceMessageLimit + "\n");
+write(sourceMote, "limit " + sourceMessageLimit);
 write(sinkMote, "set sink");
 
 var trickleIMin = 16;
 var trickleIMax = 10;
-var trickelRedundancyConst = 2;
+var trickleRedundancyConst = 2;
 
-for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax + " " + trickelRedundancyConst);
+log.log("Initialising sim with imin: " + trickleIMin + " imax: " + trickleIMax + " redundancy cost: " +
+    trickleRedundancyConst + "\n");
+for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax + " " + trickleRedundancyConst);
 
 // TODO: Remove this timeout
-TIMEOUT(10000, log.log("\n\nfoo\n"));
+TIMEOUT(100000, log.log("\n\nfoo\n"));
 
 /**
  * A high-level function to fail node(s) in the simulation based on a specified failure mode
@@ -101,9 +106,7 @@ function failNode(failureMode) {
     // * Choose node(s) to fail based on failure mode and number of nodes that are allowed to fail
     // --> If the failure mode is temporal, another failure should happen shortly
 
-    // TODO: Log which mote(s) are being failed
     var moteToFail;
-
     if (failureMode === "location") {
         // Get a list of candidate motes to fail
         var moteList = [];
@@ -134,7 +137,14 @@ function failNode(failureMode) {
         moteToFail = failableMotes.get(random.nextInt(failableMotes.size()));
     }
 
-    log.log("Selected mote to fail is: " + moteToFail + "\n");
+    // Check that the mote selected will not break sim constraints
+    nodeGraph.toggleMote(moteToFail);
+    if (!nodeGraph.isConnected()) {
+        // Toggle it a 2nd time since the constraints are broken
+        nodeGraph.toggleMote(moteToFail);
+        return;
+    }
+    log.log("Failing mote " + moteToFail + "\n");
 
     // Restart the mote
     var timeOfRestart = time + moteRecoveryDelay;
@@ -163,6 +173,8 @@ while (true) {
             // If the node needs to be brought back online
             if (time >= failedMotesTime.get(i)) {
                 // Remove the mote from the failed motes list -- wakeup is done on the mote
+                nodeGraph.toggleMote(failedMotes.get(i));
+                log.log("Mote " + failedMotes.get(i) + " is online\n");
                 failedMotesTime.remove(i);
                 failedMotes.remove(i);
             }
