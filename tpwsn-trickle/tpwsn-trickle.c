@@ -195,6 +195,7 @@ serial_handler(char *data) {
     bool seen_imax = false;
     bool seen_cost = false;
     bool seen_limit = false;
+    bool seen_print = false;
 
     // Iterate over the tokenised string
     while (ptr != NULL) {
@@ -225,6 +226,17 @@ serial_handler(char *data) {
         if (seen_limit) {
             msg_limit = strtol(ptr, &endptr, 10);
             LOG_INFO("Setting limit to %ld\n", msg_limit);
+        }
+
+        // Parse serial input to output the current token of the node
+        if (strcmp(ptr, "print") == 0) {
+            LOG_INFO("Seen print\n");
+            seen_print = true;
+        }
+        if (seen_print) {
+            LOG_INFO("Current token: %d\n", token);
+            NETSTACK_RADIO.off();
+            suppress_trickle = true;
         }
 
         // Parse serial input for restarting a node

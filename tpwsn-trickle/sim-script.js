@@ -1,6 +1,6 @@
 /**
  * TPWSN Trickle Simulation Script
- * 
+ *
  * Created by David Richardson, University of Warwick
  */
 load("nashorn:mozilla_compat.js");
@@ -8,6 +8,8 @@ importPackage(java.io);
 importPackage(java.util);
 importPackage(org.contikios.cooja.util);
 importPackage(org.contikios.cooja.interfaces);
+
+var runNumber = 1;
 
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
@@ -20,6 +22,13 @@ var maxFailureCount = 1;
 var moteRecoveryDelay = 5000;
 // The failure probability for a single node (1/this value)
 var moteFailureProbability = 100;
+var simulationStopTick = 12902348;
+var terminate = false;
+
+// Trickle params
+var trickleIMin = 16;
+var trickleIMax = 10;
+var trickleRedundancyConst = 2;
 
 // The random generator for failing motes (tied to the sim seed)
 var random = new Random(sim.getRandomSeed());
@@ -28,8 +37,16 @@ var failureMode = "random";
 
 // Simulation file output object
 var outputs = new Object();
+
+// Write the output for each mote to a file
+// if (!outputs[id.toString()]) {
+//     log.log("Opening file for id " + id.toString() + "\n");
+//     outputs[id.toString()] = new FileWriter(filePrefix + id + ".txt");
+// }
+
 // Simulation log file prefix
-var filePrefix = "log_";
+var filePrefix = "run_" + runNumber + "_" + maxFailureCount + "fail_" + trickleIMin + "-" + trickleIMax + "-" +
+    trickleRedundancyConst+ "_" + failureMode + "_log_";
 
 var allMotes = sim.getMotes();
 var failedMotes = new ArrayList(maxFailureCount);
@@ -42,7 +59,7 @@ var sourceMessageLimit = 1;
 
 // Make sure that the source and sink aren't the same
 while (sourceMoteID === sinkMoteID) {
-   sinkMoteID = Math.floor(Math.random() * allMotes.length);
+    sinkMoteID = Math.floor(Math.random() * allMotes.length);
 }
 
 // Actually get the mote(s) and tell them that they're these nodes
@@ -67,6 +84,9 @@ var temporalCrashDelay = 500;
 // Create the NodeGraph instance
 var nodeGraph = new NodeGraph(sim);
 
+// Initialise the outputs
+for each (var m in allMotes) outputs[m.getID().toString()] = new FileWriter(filePrefix + m.getID().toString() + ".txt");
+
 GENERATE_MSG(2000, "start-sim");
 YIELD_THEN_WAIT_UNTIL(msg.equals("start-sim"));
 
@@ -75,16 +95,14 @@ log.log("Initialising source with limit: " + sourceMessageLimit + "\n");
 write(sourceMote, "limit " + sourceMessageLimit);
 write(sinkMote, "set sink");
 
-var trickleIMin = 16;
-var trickleIMax = 10;
-var trickleRedundancyConst = 2;
-
 log.log("Initialising sim with imin: " + trickleIMin + " imax: " + trickleIMax + " redundancy cost: " +
     trickleRedundancyConst + "\n");
 for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax + " " + trickleRedundancyConst);
 
-// TODO: Remove this timeout
-TIMEOUT(100000, log.log("\n\nfoo\n"));
+// If there are motes to fail, the sim probably should be cut short
+if (maxFailureCount > 0) {
+    TIMEOUT(15302, log.log("\n\nSimulation time out\n"));
+}
 
 /**
  * A high-level function to fail node(s) in the simulation based on a specified failure mode
@@ -153,18 +171,13 @@ function failNode(failureMode) {
     write(moteToFail, "sleep " + moteRecoveryDelay);
 }
 
+var consistentSet = new HashSet(allMotes.length);
+
 while (true) {
     // TODO: This is where the main sim loop sits
     // Need to update and track the failed mote(s), as well as write the mote output
     // to file(s)
-
-    // Write the output for each mote to a file
-    if (!outputs[id.toString()]) {
-        log.log("Opening file for id " + id.toString() + "\n");
-        outputs[id.toString()] = new FileWriter(filePrefix + id + ".txt");
-    }
-    
-    outputs[id.toString()].write(time + ";" + msg + "\n");
+    outputs[mote.getID().toString()].write(time + ";" + msg + "\n");
 
     try {
         YIELD();
@@ -192,8 +205,49 @@ while (true) {
                 failNode(failureMode);
             }
         }
+
+        // If there are no crashes, measure the time it takes to complete the sim
+        if (maxFailureCount === 0) {
+            // If the message is a consistency report then add it to the list of nodes with that message
+            if (msg.indexOf('Consistent') !== -1) {
+                consistentSet.add(id);
+            }
+
+            // If all motes have reported consistency, report the time and end the sim
+            if (consistentSet.size() === allMotes.length) {
+                for (var ids in outputs) {
+                    log.log("Closing filewriter for id " + ids + "\n");
+                    outputs[ids].close();
+                }
+
+                log.log(time + " all motes converged, closing sim\n");
+
+                testOK();
+            }
+        } else {
+            if (maxFailureCount > 0 && simulationStopTick > 0 && time >= simulationStopTick && terminate === false) {
+                for each (var m in allMotes) write(m, "print");
+                terminate = true;
+            }
+
+            if (msg.indexOf("Current token") !== -1) {
+                consistentSet.add(id);
+            }
+
+            if (consistentSet.size() === allMotes.length) {
+                for (var ids in outputs) {
+                    log.log("Closing filewriter for id " + ids + "\n");
+                    outputs[ids].close();
+                }
+
+                log.log(time + " all motes output token, closing sim\n");
+
+                testOK();
+            }
+        }
     } catch (e) {
-        for (var ids in outputs) {
+        // If the sim is supposed to cut short (with mote failures)
+       for (var ids in outputs) {
             log.log("Closing filewriter for id " + ids + "\n");
             outputs[ids].close();
         }
