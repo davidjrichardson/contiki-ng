@@ -19,7 +19,7 @@ var ArrayDeque = Java.type("java.util.ArrayDeque");
 // The maximum number of nodes that can fail at once
 var maxFailureCount = 1;
 // The recovery delay in clock ticks
-var moteRecoveryDelay = 5000;
+var moteRecoveryDelay = 100000;
 // The failure probability for a single node (1/this value)
 var moteFailureProbability = 100;
 var simulationStopTick = 12902348;
@@ -31,7 +31,7 @@ var trickleIMax = 10;
 var trickleRedundancyConst = 2;
 
 // The random generator for failing motes (tied to the sim seed)
-var random = new Random(sim.getRandomSeed());
+var rng = new Random(sim.getRandomSeed());
 // The failure mode for this simulation
 var failureMode = "random";
 
@@ -53,13 +53,13 @@ var failedMotes = new ArrayList(maxFailureCount);
 var failedMotesTime = new ArrayList(maxFailureCount);
 
 // The source and sink node IDs - they cannot be the same.
-var sourceMoteID = Math.floor(Math.random() * allMotes.length);
-var sinkMoteID = Math.floor(Math.random() * allMotes.length);
+var sourceMoteID = Math.floor(rng.nextFloat() * allMotes.length);
+var sinkMoteID = Math.floor(rng.nextFloat() * allMotes.length);
 var sourceMessageLimit = 1;
 
 // Make sure that the source and sink aren't the same
 while (sourceMoteID === sinkMoteID) {
-    sinkMoteID = Math.floor(Math.random() * allMotes.length);
+    sinkMoteID = Math.floor(rng.nextFloat() * allMotes.length);
 }
 
 // Actually get the mote(s) and tell them that they're these nodes
@@ -148,11 +148,11 @@ function failNode(failureMode) {
         }
 
         // Get a mote from the set
-        var choice = random.nextInt(moteSet.size());
+        var choice = rng.nextInt(moteSet.size());
         var moteSetList = new ArrayList(moteSet);
         moteToFail = moteSetList.get(choice);
     } else {
-        moteToFail = failableMotes.get(random.nextInt(failableMotes.size()));
+        moteToFail = failableMotes.get(rng.nextInt(failableMotes.size()));
     }
 
     // Check that the mote selected will not break sim constraints
@@ -201,7 +201,7 @@ while (true) {
             //     }
             // }
         } else {
-            if (random.nextInt(moteFailureProbability) === 0) {
+            if (rng.nextInt(moteFailureProbability) === 0) {
                 failNode(failureMode);
             }
         }
