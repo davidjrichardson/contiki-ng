@@ -267,17 +267,17 @@ serial_handler(char *data) {
     }
 
     if (seen_sleep && delay > 0) {
-        LOG_INFO("Restarting with delay of %ld ticks\n", delay);
+        LOG_INFO("Restarting with delay of %ld seconds\n", delay);
 
         NETSTACK_RADIO.off();
-        etimer_set(&rt, delay);
+        etimer_set(&rt, (delay * CLOCK_SECOND));
         suppress_trickle = true;
         reset_scheduled = true;
         leds_on(LEDS_ALL);
     }
 }
 
-/*---------------------------------------------------------------------------*/
+/*-------------------------------------œ--------------------------------------*/
 static void
 restart_node(void) {
     // Reset the internal trickle state to emulate power loss
