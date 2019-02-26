@@ -17,13 +17,13 @@ abs_dir = Path("/Users/david/Projects/contiki-ng/tpwsn-trickle/experiments")
 
 os.chdir(str(experiment_dir))
 
-fail_range = range(1,16)
+fail_range = range(9,16)
 fail_mode = ["random", "location"]
 
 redundancy_range = [2] #range(2,4)
 imin_range = [16] #[8, 16, 32]
 imax_range = [10] #range(8, 11)
-recovery_range = range(1000, 16000, 1000) #[5000, 10000, 15000, 20000]
+recovery_range = [1, 2, 3, 4]
 
 repeats = 10
 

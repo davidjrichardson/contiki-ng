@@ -20,7 +20,7 @@ sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
 os.chdir(str(experiment_dir))
 
 # Experiment params
-repeats = 1
+repeats = range(0, 10)
 redundancy_range = [2] #range(2,4)
 imin_range = [16] #[8, 16, 32]
 imax_range = [10] #range(8, 11)
@@ -31,18 +31,18 @@ experiment_recovery_range = range(1, 16)
 
 experiment_size = 7 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_recovery_range, experiment_fail_modes, redundancy_range, 
-                                          imin_range, imax_range, experiment_recovery_range))
+                                          imin_range, imax_range, experiment_recovery_range, repeats))
 
 control_recovery_range = [0]
 control_fail_range = [0]
 control_fail_mode = ["random"]
 
 control_space = list(itertools.product(control_fail_range, control_fail_mode, redundancy_range, imin_range, 
-                                       imax_range, control_recovery_range))
+                                       imax_range, control_recovery_range, repeats))
 
 
-def render_js(params, run, stop, script_file):
-    motes, mode, k, imin, imax, recovery = params
+def render_js(params, stop, script_file):
+    motes, mode, k, imin, imax, recovery, run = params
     script = open(script_file, 'r').readlines()
     
     script_modified = map(lambda x: x.replace("%run%", str(run)), script)
@@ -70,7 +70,7 @@ def render_sim(params, size, seed, run):
   sim.find('randomseed').text = str(seed)
 
   # Add the simulation script in
-  plugin.find('script').text = render_js(params, 0, 0, str(script_template))
+  plugin.find('script').text = render_js(params, 0, str(script_template))
 
   # Add the motes back to the sim
   for mote in mote_range:
@@ -101,34 +101,31 @@ def render_sim(params, size, seed, run):
   return etree.tostring(root, pretty_print=True).decode('utf-8')
 
 
-def run_control(experiment):
-    motes, mode, k, imin, imax, recovery = experiment
+def run_experiment(experiment):
+    motes, mode, k, imin, imax, recovery, run = experiment
 
-    for run in range(0, repeats):
-        os.chdir(str(abs_dir))
-        sim_seed = 12345678 + run
+    os.chdir(str(abs_dir))
+    sim_seed = 12345678 + run
+    param_dir = Path(experiment_dir, "control-{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
+                      imax, run, recovery))
+    sim_file = Path(param_dir, 'sim.csc')
 
-        param_dir = Path(experiment_dir, "control-{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
-                         imax, run, recovery))
-        sim_file = Path(param_dir, 'sim.csc')
+    if not param_dir.exists():
+        param_dir.mkdir(parents=True)
 
-        if not param_dir.exists():
-            param_dir.mkdir(parents=True)
+    with open(str(sim_file), 'wt') as sim:
+        sim.write(render_sim(experiment, experiment_size, sim_seed, run))
 
-        with open(str(sim_file), 'wt') as sim:
-            sim.write(render_sim(experiment, experiment_size, sim_seed, run))
-
-        os.chdir(str(param_dir))
-        subprocess.call(["java", "-mx512m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
-                        "-nogui=sim.csc", "-contiki=../../.."])
+    os.chdir(str(param_dir))
+    subprocess.call(["java", "-mx512m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
+                    "-nogui=sim.csc", "-contiki=../../.."])
 
 
-run_control(control_space[0])
-
-# # Run the control experiments and then run the 
-# if __name__ == "__main__":
-#     with Pool(4) as p:
-#         p.map(run_control, control_space)
-#         # TODO: Parse the sim output for control experiments
-#         # TODO: Render sims for n fails (with new runtime)
-#         # TODO: Run the sims
+# Run the control experiments and then run the 
+if __name__ == "__main__":
+  print("Running control experiment(s)")
+  with Pool(8) as p:
+      p.map(run_experiment, control_space)
+      # TODO: Parse the sim output for control experiments
+      # TODO: Render sims for n fails (with new runtime)
+      # TODO: Run the sims
