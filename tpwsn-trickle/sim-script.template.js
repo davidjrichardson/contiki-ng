@@ -223,6 +223,6 @@ while (true) {
             outputs[ids].close();
         }
 
-        throw("Simulation script killed")
+        throw("Simulation script killed");
     }
 }
