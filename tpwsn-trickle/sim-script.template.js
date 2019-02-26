@@ -219,7 +219,6 @@ while (true) {
     } catch (e) {
         // If the sim is supposed to cut short (with mote failures)
        for (var ids in outputs) {
-            log.log("Closing filewriter for id " + ids + "\n");
             outputs[ids].close();
         }
 
