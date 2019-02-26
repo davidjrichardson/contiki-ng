@@ -5,7 +5,9 @@ import os
 import itertools
 import html
 import subprocess
+import re
 
+from collections import namedtuple
 from lxml import etree
 from multiprocessing import Pool
 from pathlib import Path
@@ -17,13 +19,13 @@ abs_dir = Path("/Users/david/Projects/contiki-ng/tpwsn-trickle")
 script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.template.js')
 sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
 
-os.chdir(str(experiment_dir))
+Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 
 # Experiment params
-repeats = range(0, 10)
-redundancy_range = [2] #range(2,4)
+repeats = range(0, 3)
+redundancy_range = range(2,4)
 imin_range = [16] #[8, 16, 32]
-imax_range = [10] #range(8, 11)
+imax_range = range(8, 11)
 
 experiment_recovery_range = range(1, 16)
 experiment_fail_modes = ["random", "location"]
@@ -59,46 +61,46 @@ def render_js(params, stop, script_file):
     
     
 def render_sim(params, size, seed, run):
-  mote_range = range(0, size**2)
-  # soup = Soup(open(str(sim_template), 'r').read(), 'xml')
-  template_str = open(str(sim_template), 'rb').read()
-  root = etree.fromstring(template_str)
-  sim = root.find('simulation')
-  plugin = root.find('plugin').find('plugin_config')
+    mote_range = range(0, size**2)
+    # soup = Soup(open(str(sim_template), 'r').read(), 'xml')
+    template_str = open(str(sim_template), 'rb').read()
+    root = etree.fromstring(template_str)
+    sim = root.find('simulation')
+    plugin = root.find('plugin').find('plugin_config')
 
-  # Set the random seed of the simulation
-  sim.find('randomseed').text = str(seed)
+    # Set the random seed of the simulation
+    sim.find('randomseed').text = str(seed)
 
-  # Add the simulation script in
-  plugin.find('script').text = render_js(params, 0, str(script_template))
+    # Add the simulation script in
+    plugin.find('script').text = render_js(params, 0, str(script_template))
 
-  # Add the motes back to the sim
-  for mote in mote_range:
-      mote_x = 40.0 * (mote % 7)
-      mote_y = 40.0 * (mote // 7)
-      mote_z = 0.0
-      
-      mote_str = """<mote>
-  <breakpoints />
-  <interface_config>
-    org.contikios.cooja.interfaces.Position
-    <x>{x}</x>
-    <y>{y}</y>
-    <z>{z}</z>
-  </interface_config>
-  <interface_config>
-    org.contikios.cooja.mspmote.interfaces.MspClock
-    <deviation>1.0</deviation>
-  </interface_config>
-  <interface_config>
-    org.contikios.cooja.mspmote.interfaces.MspMoteID
-    <id>{id}</id>
-  </interface_config>
-  <motetype_identifier>sky1</motetype_identifier>
-</mote>""".format(x=mote_x, y=mote_y, z=mote_z, id=mote+1)
-      sim.append(etree.fromstring(mote_str))
+    # Add the motes back to the sim
+    for mote in mote_range:
+        mote_x = 40.0 * (mote % 7)
+        mote_y = 40.0 * (mote // 7)
+        mote_z = 0.0
+        
+        mote_str = """<mote>
+        <breakpoints />
+        <interface_config>
+            org.contikios.cooja.interfaces.Position
+            <x>{x}</x>
+            <y>{y}</y>
+            <z>{z}</z>
+        </interface_config>
+        <interface_config>
+            org.contikios.cooja.mspmote.interfaces.MspClock
+            <deviation>1.0</deviation>
+        </interface_config>
+        <interface_config>
+            org.contikios.cooja.mspmote.interfaces.MspMoteID
+            <id>{id}</id>
+        </interface_config>
+        <motetype_identifier>sky1</motetype_identifier>
+        </mote>""".format(x=mote_x, y=mote_y, z=mote_z, id=mote+1)
+        sim.append(etree.fromstring(mote_str))
 
-  return etree.tostring(root, pretty_print=True).decode('utf-8')
+    return etree.tostring(root, pretty_print=True).decode('utf-8')
 
 
 def run_experiment(experiment):
@@ -121,11 +123,56 @@ def run_experiment(experiment):
                     "-nogui=sim.csc", "-contiki=../../.."])
 
 
+def parse_control(file_path):
+    # Parse the COOJA.testlog file
+    logfile = open(file_path, 'r').readlines()
+    end_tick_re = re.compile(r'^(?P<tick>\d+)\ all\ motes\ converged,\ closing\ sim$')
+    end_tick = None
+
+    for line in logfile:
+        match = end_tick_re.match(line)
+
+        if match:
+            end_tick = int(match.group('tick'))
+
+    return end_tick
+
+
 # Run the control experiments and then run the 
 if __name__ == "__main__":
-  print("Running control experiment(s)")
-  with Pool(8) as p:
-      p.map(run_experiment, control_space)
-      # TODO: Parse the sim output for control experiments
-      # TODO: Render sims for n fails (with new runtime)
-      # TODO: Run the sims
+    # Run the control experiments
+    # print("Running control experiment(s)")
+    # os.chdir(str(experiment_dir))
+    # with Pool(4) as p:
+    #     p.map(run_experiment, control_space)
+
+    # Process the control experiments to get the run times
+    print("Getting runtime(s) from the control experiments")
+    os.chdir(abs_dir)
+    
+    exp_re = re.compile(r'(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
+    control_re = re.compile(r'control-(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
+    control_experiments = list(filter(lambda x: os.path.isdir(str(Path(experiment_dir, x))) and 'control' in x, 
+                                      os.listdir(str(experiment_dir))))
+    control_times = {}
+  
+    for control in control_experiments:
+        control_dir = Path(experiment_dir, control)
+        params = control_re.match(control).groupdict()
+        params.pop('r', -1)
+        
+        experiment = Experiment(**params)
+        tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
+
+        if control_times.get(experiment):
+            control_times[experiment].append(tick_time)
+        else:
+            control_times[experiment] = [tick_time]
+
+    print(control_times)
+
+    # print(np.average(control_times))
+
+    # TODO: Parse the sim output for control experiments
+    # TODO: Render sims for n fails (with new runtime)
+    # TODO: Run the sims
