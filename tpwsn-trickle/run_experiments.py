@@ -6,6 +6,7 @@ import itertools
 import html
 import subprocess
 import re
+import math
 
 from collections import namedtuple
 from lxml import etree
@@ -21,18 +22,20 @@ sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
 
 Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 
+num_threads = 8
+
 # Experiment params
 repeats = range(0, 3)
 redundancy_range = range(2,4)
 imin_range = [16] #[8, 16, 32]
 imax_range = range(8, 11)
 
-experiment_recovery_range = range(1, 16)
+experiment_fail_range = range(1, 16)
 experiment_fail_modes = ["random", "location"]
-experiment_recovery_range = range(1, 16)
+experiment_recovery_range = range(1, 5)
 
 experiment_size = 7 # Number of motes along one axis (forms a square)
-experiment_space = list(itertools.product(experiment_recovery_range, experiment_fail_modes, redundancy_range, 
+experiment_space = list(itertools.product(experiment_fail_range, experiment_fail_modes, redundancy_range, 
                                           imin_range, imax_range, experiment_recovery_range, repeats))
 
 control_recovery_range = [0]
@@ -41,26 +44,27 @@ control_fail_mode = ["random"]
 
 control_space = list(itertools.product(control_fail_range, control_fail_mode, redundancy_range, imin_range, 
                                        imax_range, control_recovery_range, repeats))
+control_times = {}
 
 
-def render_js(params, stop, script_file):
+def render_js(params, stop_tick, script_file):
     motes, mode, k, imin, imax, recovery, run = params
     script = open(script_file, 'r').readlines()
     
     script_modified = map(lambda x: x.replace("%run%", str(run)), script)
     script_modified = map(lambda x: x.replace("%failures%", str(motes)), script_modified)
     script_modified = map(lambda x: x.replace("%delay%", str(recovery)), script_modified)
-    script_modified = map(lambda x: x.replace("%tick%", str(stop)), script_modified)
+    script_modified = map(lambda x: x.replace("%tick%", str(stop_tick)), script_modified)
     script_modified = map(lambda x: x.replace("%imin%", str(imin)), script_modified)
     script_modified = map(lambda x: x.replace("%imax%", str(imax)), script_modified)
     script_modified = map(lambda x: x.replace("%k%", str(k)), script_modified)
     script_modified = map(lambda x: x.replace("%mode%", str(mode)), script_modified)
-    script_modified = map(lambda x: x.replace("%timeout%", str(stop + (5*1e6))), script_modified)
+    script_modified = map(lambda x: x.replace("%timeout%", str(int(math.ceil(stop_tick/1000) + (5*1e3)))), script_modified)
     
     return ''.join(script_modified)
     
     
-def render_sim(params, size, seed, run):
+def render_sim(params, size, seed, stop_tick=0):
     mote_range = range(0, size**2)
     # soup = Soup(open(str(sim_template), 'r').read(), 'xml')
     template_str = open(str(sim_template), 'rb').read()
@@ -72,7 +76,7 @@ def render_sim(params, size, seed, run):
     sim.find('randomseed').text = str(seed)
 
     # Add the simulation script in
-    plugin.find('script').text = render_js(params, 0, str(script_template))
+    plugin.find('script').text = render_js(params, stop_tick, str(script_template))
 
     # Add the motes back to the sim
     for mote in mote_range:
@@ -103,7 +107,7 @@ def render_sim(params, size, seed, run):
     return etree.tostring(root, pretty_print=True).decode('utf-8')
 
 
-def run_experiment(experiment):
+def run_control(experiment):
     motes, mode, k, imin, imax, recovery, run = experiment
 
     os.chdir(str(abs_dir))
@@ -116,7 +120,7 @@ def run_experiment(experiment):
         param_dir.mkdir(parents=True)
 
     with open(str(sim_file), 'wt') as sim:
-        sim.write(render_sim(experiment, experiment_size, sim_seed, run))
+        sim.write(render_sim(experiment, experiment_size, sim_seed))
 
     os.chdir(str(param_dir))
     subprocess.call(["java", "-mx512m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
@@ -138,13 +142,49 @@ def parse_control(file_path):
     return end_tick
 
 
+def filter_experiments(experiments, mask):
+    # Mask is a namedtuple that has None for fields that are to be ignored
+    mask_set = set(filter(lambda x: x[1], mask._asdict().items()))
+    return list(filter(lambda x: mask_set <= set(x._asdict().items()), experiments))
+
+
+def run_experiment(experiment):
+    motes, mode, k, imin, imax, recovery, run = experiment
+
+    os.chdir(str(abs_dir))
+    sim_seed = 123456789 + run
+    param_dir = Path(experiment_dir, "{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
+                      imax, run, recovery))
+    sim_file = Path(param_dir, 'sim.csc')
+
+    # Get the duration of the simulation
+    exp_tuple = Experiment(d='', k=str(k), imin=str(imin), imax=str(imax), n='', t='')
+    tick_key = filter_experiments(control_times.keys(), exp_tuple)
+
+    if not tick_key:
+        print("Cannot run experiment " + str(experiment) + " because there is no control data")
+        return
+        
+    tick = int(math.ceil(np.average(control_times[tick_key[0]])))
+
+    if not param_dir.exists():
+        param_dir.mkdir(parents=True)
+
+    with open(str(sim_file), 'wt') as sim:
+        sim.write(render_sim(experiment, experiment_size, sim_seed, tick))
+
+    os.chdir(str(param_dir))
+    subprocess.call(["java", "-mx512m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
+                    "-nogui=sim.csc", "-contiki=../../.."])
+
+
 # Run the control experiments and then run the 
 if __name__ == "__main__":
     # Run the control experiments
-    # print("Running control experiment(s)")
-    # os.chdir(str(experiment_dir))
-    # with Pool(4) as p:
-    #     p.map(run_experiment, control_space)
+    print("Running control experiment(s)")
+    os.chdir(str(experiment_dir))
+    with Pool(num_threads) as p:
+        p.map(run_control, control_space)
 
     # Process the control experiments to get the run times
     print("Getting runtime(s) from the control experiments")
@@ -154,7 +194,6 @@ if __name__ == "__main__":
     control_re = re.compile(r'control-(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
     control_experiments = list(filter(lambda x: os.path.isdir(str(Path(experiment_dir, x))) and 'control' in x, 
                                       os.listdir(str(experiment_dir))))
-    control_times = {}
   
     for control in control_experiments:
         control_dir = Path(experiment_dir, control)
@@ -169,10 +208,8 @@ if __name__ == "__main__":
         else:
             control_times[experiment] = [tick_time]
 
-    print(control_times)
-
-    # print(np.average(control_times))
-
-    # TODO: Parse the sim output for control experiments
-    # TODO: Render sims for n fails (with new runtime)
-    # TODO: Run the sims
+    # Run the test sims
+    print("Running experiments")
+    os.chdir(str(experiment_dir))
+    with Pool(num_threads) as p:
+        p.map(run_experiment, experiment_space)
