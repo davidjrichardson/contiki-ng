@@ -88,11 +88,6 @@ log.log("Initialising sim with imin: " + trickleIMin + " imax: " + trickleIMax +
     trickleRedundancyConst + "\n");
 for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax + " " + trickleRedundancyConst);
 
-// If there are motes to fail, the sim probably should be cut short
-if (maxFailureCount > 0) {
-    TIMEOUT(%timeout%, log.log("\n\nSimulation time out\n"));
-}
-
 /**
  * A high-level function to fail node(s) in the simulation based on a specified failure mode
  * @param failureMode - The failure mode (String) to determine how to fail node(s).

@@ -15,9 +15,10 @@ from pathlib import Path
 
 contiki_dir = Path('..')
 experiment_dir = Path(contiki_dir, 'tpwsn-trickle/experiments')
-abs_dir = Path("/Users/david/Projects/contiki-ng/tpwsn-trickle")
+abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.template.js')
+control_script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.template.js')
 sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
 
 Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
@@ -59,7 +60,7 @@ def render_js(params, stop_tick, script_file):
     script_modified = map(lambda x: x.replace("%imax%", str(imax)), script_modified)
     script_modified = map(lambda x: x.replace("%k%", str(k)), script_modified)
     script_modified = map(lambda x: x.replace("%mode%", str(mode)), script_modified)
-    script_modified = map(lambda x: x.replace("%timeout%", str(int(math.ceil(stop_tick/1000) + (5*1e3)))), script_modified)
+    script_modified = map(lambda x: x.replace("%timeout%", str(int(math.ceil(stop_tick/1000) + (1*1e4)))), script_modified)
     
     return ''.join(script_modified)
     
@@ -72,11 +73,17 @@ def render_sim(params, size, seed, stop_tick=0):
     sim = root.find('simulation')
     plugin = root.find('plugin').find('plugin_config')
 
+    # If its a control simulation, stop_tick is 0 and we don't need a timeout
+    if stop_tick == 0:
+        script_path = str(control_script_template)
+    else:
+        script_path = str(script_template)
+
     # Set the random seed of the simulation
     sim.find('randomseed').text = str(seed)
 
     # Add the simulation script in
-    plugin.find('script').text = render_js(params, stop_tick, str(script_template))
+    plugin.find('script').text = render_js(params, stop_tick, script_path)
 
     # Add the motes back to the sim
     for mote in mote_range:
