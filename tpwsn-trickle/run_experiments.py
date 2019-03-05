@@ -195,7 +195,7 @@ if __name__ == "__main__":
 
     # Process the control experiments to get the run times
     print("Getting runtime(s) from the control experiments")
-    os.chdir(abs_dir)
+    os.chdir(str(abs_dir))
     
     exp_re = re.compile(r'(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
     control_re = re.compile(r'control-(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
