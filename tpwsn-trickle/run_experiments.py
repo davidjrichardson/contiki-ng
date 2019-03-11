@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/python3
 
 import numpy as np
 import os
@@ -23,13 +23,13 @@ sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
 
 Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 
-num_threads = 8
+num_threads = 32
 
 # Experiment params
-repeats = range(0, 3)
+repeats = range(0, 10)
 redundancy_range = range(2,4)
-imin_range = [16] #[8, 16, 32]
-imax_range = range(8, 11)
+imin_range = [4, 8, 16, 32]
+imax_range = range(5, 11)
 
 experiment_fail_range = range(1, 16)
 experiment_fail_modes = ["random", "location"]
