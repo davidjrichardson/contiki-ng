@@ -38,6 +38,7 @@ exp_dict = {}
 
 
 for exp in experiments:
+    print('Parsing experiment: ' + exp)
     exp_dir = Path(exp_path, exp)
     params = exp_re.match(exp).groupdict()
     params.pop('r', -1)
