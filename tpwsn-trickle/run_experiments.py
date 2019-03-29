@@ -26,16 +26,16 @@ Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 num_threads = 32
 
 # Experiment params
-repeats = range(0, 10)
+repeats = range(0, 3)
 redundancy_range = range(2,4)
 imin_range = [4, 8, 16, 32]
-imax_range = range(5, 11)
+imax_range = range(5, 14)
 
 experiment_fail_range = range(1, 16)
 experiment_fail_modes = ["random", "location"]
-experiment_recovery_range = range(1, 5)
+experiment_recovery_range = range(1, 11)
 
-experiment_size = 7 # Number of motes along one axis (forms a square)
+experiment_size = 15 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_fail_range, experiment_fail_modes, redundancy_range, 
                                           imin_range, imax_range, experiment_recovery_range, repeats))
 
@@ -181,7 +181,7 @@ def run_experiment(experiment):
         sim.write(render_sim(experiment, experiment_size, sim_seed, tick))
 
     os.chdir(str(param_dir))
-    subprocess.call(["java", "-mx512m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
+    subprocess.call(["java", "-mx1024m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
                     "-nogui=sim.csc", "-contiki=../../.."])
 
 
