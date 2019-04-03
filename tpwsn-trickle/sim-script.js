@@ -9,48 +9,40 @@ importPackage(java.util);
 importPackage(org.contikios.cooja.util);
 importPackage(org.contikios.cooja.interfaces);
 
-var runNumber = 1;
+DEBUG = false;
+WRITE_OUTPUT = false;
+
+/** Load the sim parameters from the filesystem
+ * maxFailureCount - The maximum number of nodes that can fail at once
+ * moteRecoveryDelay - The recovery delay in seconds
+ * moteFailureProbability - The failure probability for a single node (1/this value)
+ * simulationStopTick - The simulation tick to stop the simulation at (and start collecting data)
+ * trickleIMin, trickleIMax, trickleRedundancyConst - Trickle params
+ * failureMode - The mote failure mode for the sim
+ **/
+load("/Users/david/Projects/contiki-ng/tpwsn-trickle/params.js");
 
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
+var HashMap = Java.type("java.util.HashMap");
 var HashSet = Java.type("java.util.HashSet");
 var ArrayDeque = Java.type("java.util.ArrayDeque");
 
-// The maximum number of nodes that can fail at once
-var maxFailureCount = 1;
-// The recovery delay in clock ticks
-var moteRecoveryDelay = 100000;
-// The failure probability for a single node (1/this value)
-var moteFailureProbability = 100;
-var simulationStopTick = 12902348;
-var terminate = false;
-
-// Trickle params
-var trickleIMin = 16;
-var trickleIMax = 10;
-var trickleRedundancyConst = 2;
-
 // The random generator for failing motes (tied to the sim seed)
 var rng = new Random(sim.getRandomSeed());
-// The failure mode for this simulation
-var failureMode = "random";
+var terminating = false;
 
 // Simulation file output object
 var outputs = new Object();
-
-// Write the output for each mote to a file
-// if (!outputs[id.toString()]) {
-//     log.log("Opening file for id " + id.toString() + "\n");
-//     outputs[id.toString()] = new FileWriter(filePrefix + id + ".txt");
-// }
 
 // Simulation log file prefix
 var filePrefix = "run_" + runNumber + "_" + maxFailureCount + "fail_" + trickleIMin + "-" + trickleIMax + "-" +
     trickleRedundancyConst+ "_" + failureMode + "_log_";
 
 var allMotes = sim.getMotes();
-var failedMotes = new ArrayList(maxFailureCount);
-var failedMotesTime = new ArrayList(maxFailureCount);
+var failedMoteMap = new HashMap();
+// var failedMotes = new ArrayList(maxFailureCount);
+// var failedMotesTime = new ArrayList(maxFailureCount);
 
 // The source and sink node IDs - they cannot be the same.
 var sourceMoteID = Math.floor(rng.nextFloat() * allMotes.length);
@@ -78,14 +70,17 @@ for (var i = 0; i < allMotes.length; i++) {
 }
 
 // Temporal failure mode-only variables
-var temporalProbability = 33;
-var temporalCrashDelay = 500;
+// TODO: Move these to the params file when applicable
+// var temporalProbability = 33;
+// var temporalCrashDelay = 500;
 
 // Create the NodeGraph instance
 var nodeGraph = new NodeGraph(sim);
 
 // Initialise the outputs
-for each (var m in allMotes) outputs[m.getID().toString()] = new FileWriter(filePrefix + m.getID().toString() + ".txt");
+if (WRITE_OUTPUT) {
+    for each (var m in allMotes) outputs[m.getID().toString()] = new FileWriter(filePrefix + m.getID().toString() + ".txt");
+}
 
 GENERATE_MSG(2000, "start-sim");
 YIELD_THEN_WAIT_UNTIL(msg.equals("start-sim"));
@@ -99,48 +94,49 @@ log.log("Initialising sim with imin: " + trickleIMin + " imax: " + trickleIMax +
     trickleRedundancyConst + "\n");
 for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax + " " + trickleRedundancyConst);
 
-// If there are motes to fail, the sim probably should be cut short
-if (maxFailureCount > 0) {
-    TIMEOUT(15302, log.log("\n\nSimulation time out\n"));
-}
+var tokenMap = new HashMap(allMotes.length);
+var consistentSet = new HashSet(allMotes.length);
+var messagesSent = 0;
+var totalCrashes = 0;
 
 /**
  * A high-level function to fail node(s) in the simulation based on a specified failure mode
  * @param failureMode - The failure mode (String) to determine how to fail node(s).
  */
 function failNode(failureMode) {
+    // Return early if failureMode is "none" (control experiment)
+    if (failureMode === "none") return;
+    // Return early if the sim is terminating
+    if (terminating) return;
+
     // Check if we can fail any more nodes and return early if not
-    if ((maxFailureCount - failedMotes.length) <= 0) {
+    if ((maxFailureCount - failedMoteMap.size()) <= 0) {
         return;
     }
 
     // TODO: When a failure occurs:
     // * Choose a set of nodes that are relevant to the failure mode
-    // --> Location based: Pick from 1-hop neighbourhood of failed node (or random if none)
     // --> Temporal: Pick a node to fail at random
     // * Figure out if the failure would break network constraint(s)
-    // --> Check if the neighbourhood of the node is going to partition
-    // --> Check if there are any more nodes that are allowed to fail
     // * Choose node(s) to fail based on failure mode and number of nodes that are allowed to fail
     // --> If the failure mode is temporal, another failure should happen shortly
 
     var moteToFail;
     if (failureMode === "location") {
         // Get a list of candidate motes to fail
-        var moteList = [];
-        if (failedMotes.length > 0) {
+        var moteSet = new HashSet(failableMotes.size());
+        if (failedMoteMap.size() > 0) {
             // Get a list of all 1-hop neighbours for all of the failed motes
             // Duplicates don't matter since set operations later will clean them up
-            failedMotes.forEach(function(elem) {
-                moteList.concat(nodeGraph.get1HopNeighbours(elem));
+            failedMoteMap.keySet().forEach(function(elem) {
+                moteSet.addAll(nodeGraph.get1HopNeighbours(elem));
             });
         } else {
-            moteList = failableMotes;
+            moteSet.addAll(failableMotes);
         }
 
         // Filter out any motes that have are already failed
-        var moteSet = new HashSet(moteList);
-        moteSet.removeAll(new HashSet(failedMotes));
+        moteSet.removeAll(new HashSet(failedMoteMap.keySet()));
 
         // Cannot fail any more motes since the failable motes are all currently offline
         if (moteSet.isEmpty()) {
@@ -162,36 +158,78 @@ function failNode(failureMode) {
         nodeGraph.toggleMote(moteToFail);
         return;
     }
-    log.log("Failing mote " + moteToFail + "\n");
+    log.log("Failing mote " + moteToFail + " at time " + time + "\n");
 
     // Restart the mote
-    var timeOfRestart = time + moteRecoveryDelay;
-    failedMotes.add(moteToFail);
-    failedMotesTime.add(timeOfRestart);
+    var timeOfRestart = time + (1e6 * moteRecoveryDelay);
+    failableMotes.remove(moteToFail);
+    failedMoteMap.put(moteToFail, timeOfRestart);
+    // log.log(failedMoteMap + "\n\n\n");
     write(moteToFail, "sleep " + moteRecoveryDelay);
+    totalCrashes++;
 }
 
-var consistentSet = new HashSet(allMotes.length);
+/**
+ * Function that is executed before the simulation ends. Output info about
+ * simulation data (messages sent, coverage, total crashes)
+ */
+function endSimulation() {
+    log.log("Messages sent: " + messagesSent + "\n");
+    log.log("Total crashes: " + totalCrashes + "\n");
+
+    var tokenCorrect = 0;
+    var incorrectTokenMotes = new ArrayList();
+
+    // Figure out how many motes have the correct token
+    for each (var m in tokenMap.keySet()) {
+        if (tokenMap.get(m).indexOf('1') !== -1) {
+            tokenCorrect++;
+        } else {
+            incorrectTokenMotes.add(m);
+        }
+    }
+
+    log.log("Motes currently failed (" + failedMoteMap.size() + "): " + failedMoteMap + "\n");
+    log.log("Motes reporting correctly: " + tokenCorrect + "\n");
+    log.log("Motes reporting incorrectly: " + incorrectTokenMotes + "\n");
+    log.log("Coverage: " + ((tokenCorrect*1.0/allMotes.length*1.0)*100) + "\n");
+
+    throw("Simulation script killed")
+}
 
 while (true) {
-    // TODO: This is where the main sim loop sits
-    // Need to update and track the failed mote(s), as well as write the mote output
-    // to file(s)
-    outputs[mote.getID().toString()].write(time + ";" + msg + "\n");
+    if (WRITE_OUTPUT) {
+        // Write the mote output to a file
+        outputs[mote.getID().toString()].write(time + ";" + msg + "\n");
+    }
+
+    // Keep track of messages sent
+    if (msg.indexOf('Trickle TX') > -1) {
+        messagesSent++;
+    }
 
     try {
         YIELD();
 
-        for (var i = 0; i < failedMotes.size(); i++) {
+        // Temp set to hold any motes removed from the failedMotemap
+        var removeMotesFromMap = new HashSet(failedMoteMap.size());
+
+        for each (var m in failedMoteMap.keySet()) {
+            var restoreTime = failedMoteMap.get(m);
+
             // If the node needs to be brought back online
-            if (time >= failedMotesTime.get(i)) {
-                // Remove the mote from the failed motes list -- wakeup is done on the mote
-                nodeGraph.toggleMote(failedMotes.get(i));
-                log.log("Mote " + failedMotes.get(i) + " is online\n");
-                failedMotesTime.remove(i);
-                failedMotes.remove(i);
+            if (time >= restoreTime) {
+                nodeGraph.toggleMote(m);
+                failableMotes.add(m);
+                log.log("Mote " + m + " is online at time " + time + "\n");
+                removeMotesFromMap.add(m);
             }
         }
+
+        // Remove the motes from the failed mote map
+        // Note: This is done this way to avoid iterator invalidation
+        for each (var m in removeMotesFromMap) failedMoteMap.remove(m);
+        removeMotesFromMap.clear();
 
         if (failureMode === "temporal") {
             // TODO
@@ -210,48 +248,63 @@ while (true) {
         if (maxFailureCount === 0) {
             // If the message is a consistency report then add it to the list of nodes with that message
             if (msg.indexOf('Consistent') !== -1) {
-                consistentSet.add(id);
+                consistentSet.add(mote);
             }
 
             // If all motes have reported consistency, report the time and end the sim
             if (consistentSet.size() === allMotes.length) {
-                for (var ids in outputs) {
-                    log.log("Closing filewriter for id " + ids + "\n");
-                    outputs[ids].close();
+                if (DEBUG) {
+                    for (var ids in outputs) {
+                        log.log("Closing filewriter for id " + ids + "\n");
+                        outputs[ids].close();
+                    }
                 }
 
                 log.log(time + " all motes converged, closing sim\n");
 
-                testOK();
+                endSimulation();
             }
         } else {
-            if (maxFailureCount > 0 && simulationStopTick > 0 && time >= simulationStopTick && terminate === false) {
-                for each (var m in allMotes) write(m, "print");
-                terminate = true;
-            }
+            // Otherwise, check if we are beyond the simulation stop tick to terminate the sim
+            if (maxFailureCount > 0 && simulationStopTick > 0 && time >= simulationStopTick && terminating === false) {
+                terminating = true;
 
+                for each (var m in allMotes) write(m, "print");
+            }
+            
             if (msg.indexOf("Current token") !== -1) {
-                consistentSet.add(id);
+                consistentSet.add(mote);
+
+                if (failedMoteMap.containsKey(mote)) {
+                    tokenMap.put(mote, "NaN")
+                } else {
+                    tokenMap.put(mote, msg.replace("[INFO: TPWSN-TRICKLE] Current token: ", ""))
+                }
             }
 
             if (consistentSet.size() === allMotes.length) {
-                for (var ids in outputs) {
-                    log.log("Closing filewriter for id " + ids + "\n");
-                    outputs[ids].close();
+                if (DEBUG) {
+                    for (var ids in outputs) {
+                        log.log("Closing filewriter for id " + ids + "\n");
+                        outputs[ids].close();
+                    }
                 }
 
-                log.log(time + " all motes output token, closing sim\n");
+                log.log(time + " all online motes output token, closing sim\n");
 
-                testOK();
+                endSimulation();
             }
         }
     } catch (e) {
         // If the sim is supposed to cut short (with mote failures)
-       for (var ids in outputs) {
-            log.log("Closing filewriter for id " + ids + "\n");
-            outputs[ids].close();
+        if (DEBUG) {
+            for (var ids in outputs) {
+                log.log("Closing filewriter for id " + ids + "\n");
+                outputs[ids].close();
+            }
         }
-
+        
+        log.log(e);
         throw("Simulation script killed")
     }
 }

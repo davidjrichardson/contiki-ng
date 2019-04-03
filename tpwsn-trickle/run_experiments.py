@@ -23,17 +23,19 @@ sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
 
 Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 
+# Compute power
 num_threads = 32
+memory_size = '-xm2048m'
 
 # Experiment params
 repeats = range(0, 3)
-redundancy_range = range(2,4)
-imin_range = [4, 8, 16, 32]
-imax_range = range(5, 14)
+redundancy_range = range(2,3)
+imin_range = [4]
+imax_range = range(5, 6)
 
-experiment_fail_range = range(1, 16)
-experiment_fail_modes = ["random", "location"]
-experiment_recovery_range = range(1, 11)
+experiment_fail_range = range(1, 2)
+experiment_fail_modes = ["random"] #["random", "location"]
+experiment_recovery_range = range(1, 2)
 
 experiment_size = 15 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_fail_range, experiment_fail_modes, redundancy_range, 
@@ -51,6 +53,9 @@ control_times = {}
 def render_js(params, stop_tick, script_file):
     motes, mode, k, imin, imax, recovery, run = params
     script = open(script_file, 'r').readlines()
+
+    # TODO: Put all of this info into a params.js file in the sim folder (except timeout)
+    # TODO: Give the script a path to the params file
     
     script_modified = map(lambda x: x.replace("%run%", str(run)), script)
     script_modified = map(lambda x: x.replace("%failures%", str(motes)), script_modified)
@@ -60,7 +65,6 @@ def render_js(params, stop_tick, script_file):
     script_modified = map(lambda x: x.replace("%imax%", str(imax)), script_modified)
     script_modified = map(lambda x: x.replace("%k%", str(k)), script_modified)
     script_modified = map(lambda x: x.replace("%mode%", str(mode)), script_modified)
-    script_modified = map(lambda x: x.replace("%timeout%", str(int(math.ceil(stop_tick/1000) + (1*1e4)))), script_modified)
     
     return ''.join(script_modified)
     
@@ -87,8 +91,8 @@ def render_sim(params, size, seed, stop_tick=0):
 
     # Add the motes back to the sim
     for mote in mote_range:
-        mote_x = 40.0 * (mote % 7)
-        mote_y = 40.0 * (mote // 7)
+        mote_x = 40.0 * (mote % size)
+        mote_y = 40.0 * (mote // size)
         mote_z = 0.0
         
         mote_str = """<mote>
@@ -130,7 +134,7 @@ def run_control(experiment):
         sim.write(render_sim(experiment, experiment_size, sim_seed))
 
     os.chdir(str(param_dir))
-    subprocess.call(["java", "-mx512m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
+    subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
                     "-nogui=sim.csc", "-contiki=../../.."])
 
 
@@ -181,7 +185,7 @@ def run_experiment(experiment):
         sim.write(render_sim(experiment, experiment_size, sim_seed, tick))
 
     os.chdir(str(param_dir))
-    subprocess.call(["java", "-mx1024m", "-jar", "../../../tools/cooja/dist/cooja.jar", 
+    subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
                     "-nogui=sim.csc", "-contiki=../../.."])
 
 
