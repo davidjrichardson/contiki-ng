@@ -1,4 +1,50 @@
-/**
+<?xml version="1.0" encoding="UTF-8"?>
+<simconf>
+  <project EXPORT="discard">[APPS_DIR]/mrm</project>
+  <project EXPORT="discard">[APPS_DIR]/mspsim</project>
+  <project EXPORT="discard">[APPS_DIR]/avrora</project>
+  <project EXPORT="discard">[APPS_DIR]/serial_socket</project>
+  <project EXPORT="discard">[APPS_DIR]/powertracker</project>
+  <simulation>
+    <title>My simulation</title>
+    <randomseed>123456</randomseed>
+    <motedelay_us>1000000</motedelay_us>
+    <radiomedium>
+      org.contikios.cooja.radiomediums.UDGM
+      <transmitting_range>50.0</transmitting_range>
+      <interference_range>100.0</interference_range>
+      <success_ratio_tx>1.0</success_ratio_tx>
+      <success_ratio_rx>1.0</success_ratio_rx>
+    </radiomedium>
+    <events>
+      <logoutput>40000</logoutput>
+    </events>
+    <motetype>
+      org.contikios.cooja.mspmote.SkyMoteType
+      <identifier>sky1</identifier>
+      <description>Sky Mote Type #sky1</description>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/tpwsn-trickle/tpwsn-trickle.sky</firmware>
+      <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
+      <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
+      <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
+      <moteinterface>org.contikios.cooja.interfaces.Mote2MoteRelations</moteinterface>
+      <moteinterface>org.contikios.cooja.interfaces.MoteAttributes</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.MspClock</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.MspMoteID</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.SkyButton</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.SkyFlash</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.SkyCoffeeFilesystem</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.Msp802154Radio</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.MspSerial</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.SkyLED</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.MspDebugOutput</moteinterface>
+      <moteinterface>org.contikios.cooja.mspmote.interfaces.SkyTemperature</moteinterface>
+    </motetype>
+  </simulation>
+  <plugin>
+    org.contikios.cooja.plugins.ScriptRunner
+    <plugin_config>
+      <script>/**
  * TPWSN Trickle Simulation Script
  *
  * Created by David Richardson, University of Warwick
@@ -63,8 +109,8 @@ log.log("snk: " + sinkMote + "\n");
 
 // Create a failable motes array
 var failableMotes = new ArrayList(allMotes.length - 2);
-for (var i = 0; i < allMotes.length; i++) {
-    if (i !== sourceMoteID && i !== sinkMoteID) {
+for (var i = 0; i &lt; allMotes.length; i++) {
+    if (i !== sourceMoteID &amp;&amp; i !== sinkMoteID) {
         failableMotes.add(allMotes[i]);
     }
 }
@@ -110,22 +156,22 @@ function failNode(failureMode) {
     if (terminating) return;
 
     // Check if we can fail any more nodes and return early if not
-    if ((maxFailureCount - failedMoteMap.size()) <= 0) {
+    if ((maxFailureCount - failedMoteMap.size()) &lt;= 0) {
         return;
     }
 
     // TODO: When a failure occurs:
     // * Choose a set of nodes that are relevant to the failure mode
-    // --> Temporal: Pick a node to fail at random
+    // --&gt; Temporal: Pick a node to fail at random
     // * Figure out if the failure would break network constraint(s)
     // * Choose node(s) to fail based on failure mode and number of nodes that are allowed to fail
-    // --> If the failure mode is temporal, another failure should happen shortly
+    // --&gt; If the failure mode is temporal, another failure should happen shortly
 
     var moteToFail;
     if (failureMode === "location") {
         // Get a list of candidate motes to fail
         var moteSet = new HashSet(failableMotes.size());
-        if (failedMoteMap.size() > 0) {
+        if (failedMoteMap.size() &gt; 0) {
             // Get a list of all 1-hop neighbours for all of the failed motes
             // Duplicates don't matter since set operations later will clean them up
             failedMoteMap.keySet().forEach(function(elem) {
@@ -204,7 +250,7 @@ while (true) {
     }
 
     // Keep track of messages sent
-    if (msg.indexOf('Trickle TX') > -1) {
+    if (msg.indexOf('Trickle TX') &gt; -1) {
         messagesSent++;
     }
 
@@ -218,7 +264,7 @@ while (true) {
             var restoreTime = failedMoteMap.get(m);
 
             // If the node needs to be brought back online
-            if (time >= restoreTime) {
+            if (time &gt;= restoreTime) {
                 nodeGraph.toggleMote(m);
                 failableMotes.add(m);
                 log.log("Mote " + m + " is online at time " + time + "\n");
@@ -233,7 +279,7 @@ while (true) {
 
         if (failureMode === "temporal") {
             // TODO
-            // if (!failedMotes.isEmpty() && current) {
+            // if (!failedMotes.isEmpty() &amp;&amp; current) {
             //     if (random.nextInt(temporalCrashDelay) === 0) {
             //         failNode(failureMode);
             //     }
@@ -267,7 +313,7 @@ while (true) {
             }
         } else {
             // Otherwise, check if we are beyond the simulation stop tick to terminate the sim
-            if (maxFailureCount > 0 && simulationStopTick > 0 && time >= simulationStopTick && terminating === false) {
+            if (maxFailureCount &gt; 0 &amp;&amp; simulationStopTick &gt; 0 &amp;&amp; time &gt;= simulationStopTick &amp;&amp; terminating === false) {
                 terminating = true;
 
                 for each (var m in allMotes) write(m, "print");
@@ -308,4 +354,14 @@ while (true) {
         log.log(e);
         throw("Simulation script killed")
     }
-}
+}</script>
+      <active>true</active>
+    </plugin_config>
+    <width>600</width>
+    <z>0</z>
+    <height>700</height>
+    <location_x>450</location_x>
+    <location_y>200</location_y>
+  </plugin>
+</simconf>
+

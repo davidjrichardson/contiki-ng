@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/local/bin/python3
 
 import numpy as np
 import os
@@ -7,6 +7,7 @@ import html
 import subprocess
 import re
 import math
+import socket
 
 from collections import namedtuple
 from lxml import etree
@@ -17,25 +18,65 @@ contiki_dir = Path('..')
 experiment_dir = Path(contiki_dir, 'tpwsn-trickle/experiments')
 abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
-script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.template.js')
-control_script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.template.js')
-sim_template = Path(contiki_dir, 'tpwsn-trickle/7x7.csc')
+script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.js')
+sim_template = Path(contiki_dir, 'tpwsn-trickle/sim_template.csc')
 
 Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 
+mote_failure_probability = 200
+
+hostname = socket.gethostname()
+
+# TODO: Change these parameters based on hostname of the machine
 # Compute power
-num_threads = 32
-memory_size = '-xm2048m'
+if hostname is 'grace-01':
+    num_threads = 48
+else:
+    num_threads = 24
+
+memory_size = '-mx2048m'
 
 # Experiment params
-repeats = range(0, 3)
-redundancy_range = range(2,3)
-imin_range = [4]
-imax_range = range(5, 6)
+repeats = range(0, 20)
 
-experiment_fail_range = range(1, 2)
-experiment_fail_modes = ["random"] #["random", "location"]
-experiment_recovery_range = range(1, 2)
+# Set the failure range per-compute node
+if hostname is 'grace-01':
+    redundancy_range = range(1,3)
+    imin_range = [4, 8]
+    imax_range = range(5, 11)
+elif hostname is 'grace-02':
+    redundancy_range = range(1,3)
+    imin_range = [4, 8]
+    imax_range = range(11, 17)
+elif hostname is 'grace-03':
+    redundancy_range = range(1,3)
+    imin_range = [16, 32]
+    imax_range = range(5, 11)
+elif hostname is 'grace-04':
+    redundancy_range = range(1,3)
+    imin_range = [16, 32]
+    imax_range = range(11, 17)
+elif hostname is 'grace-05':
+    redundancy_range = range(3,5)
+    imin_range = [4, 8]
+    imax_range = range(5, 11)
+elif hostname is 'grace-06':
+    redundancy_range = range(3,5)
+    imin_range = [4, 8]
+    imax_range = range(11, 17)
+elif hostname is 'grace-07':
+    redundancy_range = range(3,5)
+    imin_range = [16, 32]
+    imax_range = range(5, 11)
+elif hostname is 'grace-08':
+    redundancy_range = range(3,5)
+    imin_range = [16, 32]
+    imax_range = range(11, 17)
+
+# Constant parameter space between nodes
+experiment_fail_modes = ["random", "location"]
+experiment_fail_range = range(1, 17)
+experiment_recovery_range = range(1, 16)
 
 experiment_size = 15 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_fail_range, experiment_fail_modes, redundancy_range, 
@@ -43,51 +84,44 @@ experiment_space = list(itertools.product(experiment_fail_range, experiment_fail
 
 control_recovery_range = [0]
 control_fail_range = [0]
-control_fail_mode = ["random"]
+control_fail_mode = ["none"]
 
 control_space = list(itertools.product(control_fail_range, control_fail_mode, redundancy_range, imin_range, 
                                        imax_range, control_recovery_range, repeats))
 control_times = {}
 
 
-def render_js(params, stop_tick, script_file):
+def render_js(params, stop_tick=0):
     motes, mode, k, imin, imax, recovery, run = params
-    script = open(script_file, 'r').readlines()
 
-    # TODO: Put all of this info into a params.js file in the sim folder (except timeout)
-    # TODO: Give the script a path to the params file
-    
-    script_modified = map(lambda x: x.replace("%run%", str(run)), script)
-    script_modified = map(lambda x: x.replace("%failures%", str(motes)), script_modified)
-    script_modified = map(lambda x: x.replace("%delay%", str(recovery)), script_modified)
-    script_modified = map(lambda x: x.replace("%tick%", str(stop_tick)), script_modified)
-    script_modified = map(lambda x: x.replace("%imin%", str(imin)), script_modified)
-    script_modified = map(lambda x: x.replace("%imax%", str(imax)), script_modified)
-    script_modified = map(lambda x: x.replace("%k%", str(k)), script_modified)
-    script_modified = map(lambda x: x.replace("%mode%", str(mode)), script_modified)
-    
-    return ''.join(script_modified)
+    param_string = f'var runNumber = {run};\n' \
+            f'var maxFailureCount = {motes};\n' \
+            f'var moteRecoveryDelay = {recovery};\n' \
+            f'var trickleIMin = {imin};\n' \
+            f'var trickleIMax = {imax};\n' \
+            f'var trickleRedundancyConst = {k};\n' \
+            f'var failureMode = "{mode}";\n' \
+            f'var moteFailureProbability = {mote_failure_probability};\n' \
+            f'var simulationStopTick = {stop_tick};\n'
+            
+    return param_string
     
     
-def render_sim(params, size, seed, stop_tick=0):
+def render_sim(size, seed):
     mote_range = range(0, size**2)
     # soup = Soup(open(str(sim_template), 'r').read(), 'xml')
     template_str = open(str(sim_template), 'rb').read()
     root = etree.fromstring(template_str)
     sim = root.find('simulation')
-    plugin = root.find('plugin').find('plugin_config')
-
-    # If its a control simulation, stop_tick is 0 and we don't need a timeout
-    if stop_tick == 0:
-        script_path = str(control_script_template)
-    else:
-        script_path = str(script_template)
 
     # Set the random seed of the simulation
     sim.find('randomseed').text = str(seed)
 
     # Add the simulation script in
-    plugin.find('script').text = render_js(params, stop_tick, script_path)
+    plugin = root.find('plugin').find('plugin_config')
+    script_path = str(script_template)
+    sim_script = ''.join(open(script_path, 'r').readlines())
+    plugin.find('script').text = sim_script
 
     # Add the motes back to the sim
     for mote in mote_range:
@@ -126,12 +160,16 @@ def run_control(experiment):
     param_dir = Path(experiment_dir, "control-{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
                       imax, run, recovery))
     sim_file = Path(param_dir, 'sim.csc')
+    param_file = Path(param_dir, 'params.js')
 
     if not param_dir.exists():
         param_dir.mkdir(parents=True)
 
     with open(str(sim_file), 'wt') as sim:
-        sim.write(render_sim(experiment, experiment_size, sim_seed))
+        sim.write(render_sim(experiment_size, sim_seed))
+    
+    with open(str(param_file), 'wt') as param:
+        param.write(render_js(experiment))
 
     os.chdir(str(param_dir))
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
@@ -167,6 +205,7 @@ def run_experiment(experiment):
     param_dir = Path(experiment_dir, "{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
                       imax, run, recovery))
     sim_file = Path(param_dir, 'sim.csc')
+    param_file = Path(param_dir, 'params.js')
 
     # Get the duration of the simulation
     exp_tuple = Experiment(d='', k=str(k), imin=str(imin), imax=str(imax), n='', t='')
@@ -182,7 +221,10 @@ def run_experiment(experiment):
         param_dir.mkdir(parents=True)
 
     with open(str(sim_file), 'wt') as sim:
-        sim.write(render_sim(experiment, experiment_size, sim_seed, tick))
+        sim.write(render_sim(experiment_size, sim_seed))
+    
+    with open(str(param_file), 'wt') as param:
+        param.write(render_js(experiment, tick))
 
     os.chdir(str(param_dir))
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
@@ -191,8 +233,14 @@ def run_experiment(experiment):
 
 # Run the control experiments and then run the 
 if __name__ == "__main__":
+    # Make the experiment directory
+    if not os.path.exists(str(experiment_dir)):
+        os.makedirs(str(experiment_dir))
+
+    print(hostname)
+
     # Run the control experiments
-    print("Running control experiment(s)")
+    ''' print("Running control experiment(s)")
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
         p.map(run_control, control_space)
@@ -224,3 +272,4 @@ if __name__ == "__main__":
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
         p.map(run_experiment, experiment_space)
+ '''
