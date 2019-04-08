@@ -38,35 +38,35 @@ memory_size = '-mx2048m'
 repeats = range(0, 20)
 
 # Set the failure range per-compute node
-if hostname is 'grace-01':
+if hostname == 'grace-01':
     redundancy_range = range(1,3)
     imin_range = [4, 8]
     imax_range = range(5, 11)
-elif hostname is 'grace-02':
+elif hostname == 'grace-02':
     redundancy_range = range(1,3)
     imin_range = [4, 8]
     imax_range = range(11, 17)
-elif hostname is 'grace-03':
+elif hostname == 'grace-03':
     redundancy_range = range(1,3)
     imin_range = [16, 32]
     imax_range = range(5, 11)
-elif hostname is 'grace-04':
+elif hostname == 'grace-04':
     redundancy_range = range(1,3)
     imin_range = [16, 32]
     imax_range = range(11, 17)
-elif hostname is 'grace-05':
+elif hostname == 'grace-05':
     redundancy_range = range(3,5)
     imin_range = [4, 8]
     imax_range = range(5, 11)
-elif hostname is 'grace-06':
+elif hostname == 'grace-06':
     redundancy_range = range(3,5)
     imin_range = [4, 8]
     imax_range = range(11, 17)
-elif hostname is 'grace-07':
+elif hostname == 'grace-07':
     redundancy_range = range(3,5)
     imin_range = [16, 32]
     imax_range = range(5, 11)
-elif hostname is 'grace-08':
+elif hostname == 'grace-08':
     redundancy_range = range(3,5)
     imin_range = [16, 32]
     imax_range = range(11, 17)
