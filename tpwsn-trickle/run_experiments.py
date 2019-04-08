@@ -1,5 +1,3 @@
-#!/usr/local/bin/python3
-
 import numpy as np
 import os
 import itertools
@@ -27,12 +25,10 @@ mote_failure_probability = 200
 
 hostname = socket.gethostname()
 
-# TODO: Change these parameters based on hostname of the machine
-# Compute power
 if hostname is 'grace-01':
-    num_threads = 48
-else:
     num_threads = 24
+else:
+    num_threads = 12
 
 memory_size = '-mx2048m'
 
