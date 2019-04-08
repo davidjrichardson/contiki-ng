@@ -5,4 +5,8 @@ if [[ $(hostname) == *"grace"* ]]; then
     unset PYTHONPATH
 fi
 
-nohup /usr/bin/python3.6 run_experiments.py
+if [[ $(hostname) == *"grace"* ]]; then
+    nohup /usr/bin/python3.6 run_experiments.py
+else
+    python3 run_experiments.py
+fi

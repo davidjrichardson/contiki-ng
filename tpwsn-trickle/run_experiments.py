@@ -163,6 +163,7 @@ def run_control(experiment):
                       imax, run, recovery))
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
+    cooja_out = Path(param_dir, "experiment.log")
 
     if not param_dir.exists():
         param_dir.mkdir(parents=True)
@@ -173,9 +174,12 @@ def run_control(experiment):
     with open(str(param_file), 'wt') as param:
         param.write(render_js(experiment))
 
+    # Create a log file for this experiment
+    logfile_handle = open(str(cooja_out), "w")
+
     os.chdir(str(param_dir))
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
-                    "-nogui=sim.csc", "-contiki=../../.."])
+                    "-nogui=sim.csc", "-contiki=../../.."], stdout=logfile_handle)
 
 
 def parse_control(file_path):
@@ -208,6 +212,7 @@ def run_experiment(experiment):
                       imax, run, recovery))
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
+    cooja_out = Path(param_dir, "experiment.log")
 
     # Get the duration of the simulation
     exp_tuple = Experiment(d='', k=str(k), imin=str(imin), imax=str(imax), n='', t='')
@@ -228,9 +233,12 @@ def run_experiment(experiment):
     with open(str(param_file), 'wt') as param:
         param.write(render_js(experiment, tick))
 
+    # Create a log file for this experiment
+    logfile_handle = open(str(cooja_out), "w")
+
     os.chdir(str(param_dir))
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
-                    "-nogui=sim.csc", "-contiki=../../.."])
+                    "-nogui=sim.csc", "-contiki=../../.."], stdout=logfile_handle)
 
 
 # Run the control experiments and then run the 
@@ -240,6 +248,11 @@ if __name__ == "__main__":
         os.makedirs(str(experiment_dir))
 
     print("Running {n} experiments on {host}".format(n=len(experiment_space), host=hostname))
+    print("""Experiment parameters are:
+        - Redundancy range: {range},
+        - imin range: {imin},
+        - imax range: {imax}\n\n""".format(range=list(redundancy_range), imin=list(imin_range), 
+                                           imax=list(imax_range)))
 
     # Run the control experiments
     print("Running control experiment(s)")
