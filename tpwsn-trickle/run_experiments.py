@@ -6,6 +6,7 @@ import subprocess
 import re
 import math
 import socket
+import tqdm
 
 from collections import namedtuple
 from lxml import etree
@@ -247,7 +248,8 @@ if __name__ == "__main__":
     if not os.path.exists(str(experiment_dir)):
         os.makedirs(str(experiment_dir))
 
-    print("Running {n} experiments on {host}".format(n=len(experiment_space), host=hostname))
+    print("Running {n} experiments (size is {m}x{m} grid) on {host}".format(n=len(experiment_space), 
+                                                                            m=experiment_size, host=hostname))
     print("""Experiment parameters are:
         - Redundancy range: {range},
         - imin range: {imin},
@@ -258,7 +260,7 @@ if __name__ == "__main__":
     print("Running control experiment(s)")
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
-        p.map(run_control, control_space)
+        _ = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
 
     # Process the control experiments to get the run times
     print("Getting runtime(s) from the control experiments")
@@ -286,4 +288,4 @@ if __name__ == "__main__":
     print("Running experiments")
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
-        p.map(run_experiment, experiment_space)
+        _ = list(tqdm.tqdm(p.imap(run_experiment, experiment_space), total=len(experiment_space)))
