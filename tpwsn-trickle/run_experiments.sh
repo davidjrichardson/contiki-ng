@@ -1,6 +1,7 @@
 # A simple script to run the experiments on DCS machines
 # Unset the python path on grace/etc
 if [[ $(hostname) == *"grace"* ]]; then
+    echo "Unsetting PYTHON_PATH"
     unset PYTHON_PATH
 fi
 
