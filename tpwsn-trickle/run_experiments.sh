@@ -6,7 +6,7 @@ if [[ $(hostname) == *"grace"* ]]; then
 fi
 
 if [[ $(hostname) == *"grace"* ]]; then
-    nohup /usr/bin/python3.6 run_experiments.py
+    /usr/bin/python3.6 run_experiments.py
 else
     python3 run_experiments.py
 fi
