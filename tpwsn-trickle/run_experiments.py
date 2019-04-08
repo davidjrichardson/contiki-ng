@@ -68,6 +68,10 @@ elif hostname is 'grace-08':
     redundancy_range = range(3,5)
     imin_range = [16, 32]
     imax_range = range(11, 17)
+else:
+    redundancy_range = range(1,5)
+    imin_range = [4, 8, 16, 32]
+    imax_range = range(5, 17)
 
 # Constant parameter space between nodes
 experiment_fail_modes = ["random", "location"]
@@ -90,15 +94,17 @@ control_times = {}
 def render_js(params, stop_tick=0):
     motes, mode, k, imin, imax, recovery, run = params
 
-    param_string = f'var runNumber = {run};\n' \
-            f'var maxFailureCount = {motes};\n' \
-            f'var moteRecoveryDelay = {recovery};\n' \
-            f'var trickleIMin = {imin};\n' \
-            f'var trickleIMax = {imax};\n' \
-            f'var trickleRedundancyConst = {k};\n' \
-            f'var failureMode = "{mode}";\n' \
-            f'var moteFailureProbability = {mote_failure_probability};\n' \
-            f'var simulationStopTick = {stop_tick};\n'
+    param_string = """var runNumber = {run};
+    var maxFailureCount = {motes};
+    var trickleIMin = {imin};
+    var trickleIMax = {imax};
+    var trickleRedundancyConst = {k};
+    var failureMode = "{mode}";
+    var moteFailureProbability = {mote_failure_probability};
+    var simulationStopTick = {stop_tick};""".format(run=run, motes=motes, recovery=recovery, 
+                                                    imin=imin, imax=imax, k=k, mode=mode,
+                                                    mote_failure_probability=mote_failure_probability, 
+                                                    stop_tick=stop_tick)
             
     return param_string
     
@@ -233,10 +239,10 @@ if __name__ == "__main__":
     if not os.path.exists(str(experiment_dir)):
         os.makedirs(str(experiment_dir))
 
-    print(hostname)
+    print("Running {n} experiments on {host}".format(n=len(experiment_space), host=hostname))
 
     # Run the control experiments
-    ''' print("Running control experiment(s)")
+    print("Running control experiment(s)")
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
         p.map(run_control, control_space)
@@ -268,4 +274,3 @@ if __name__ == "__main__":
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
         p.map(run_experiment, experiment_space)
- '''
