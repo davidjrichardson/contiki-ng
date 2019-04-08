@@ -45,7 +45,7 @@ if hostname == 'grace-01':
 elif hostname == 'grace-02':
     redundancy_range = range(1, 3)
     imin_range = [4, 8]
-    imax_range = range(11, 18, 2)
+    imax_range = range(13, 18, 2)
 elif hostname == 'grace-03':
     redundancy_range = range(1, 3)
     imin_range = [16, 32]
@@ -53,7 +53,7 @@ elif hostname == 'grace-03':
 elif hostname == 'grace-04':
     redundancy_range = range(1, 3)
     imin_range = [16, 32]
-    imax_range = range(11, 18, 2)
+    imax_range = range(13, 18, 2)
 elif hostname == 'grace-05':
     redundancy_range = range(3, 5)
     imin_range = [4, 8]
@@ -61,7 +61,7 @@ elif hostname == 'grace-05':
 elif hostname == 'grace-06':
     redundancy_range = range(3, 5)
     imin_range = [4, 8]
-    imax_range = range(11, 18, 2)
+    imax_range = range(13, 18, 2)
 elif hostname == 'grace-07':
     redundancy_range = range(3, 5)
     imin_range = [16, 32]
@@ -69,7 +69,7 @@ elif hostname == 'grace-07':
 elif hostname == 'grace-08':
     redundancy_range = range(3, 5)
     imin_range = [16, 32]
-    imax_range = range(11, 18, 2)
+    imax_range = range(13, 18, 2)
 else:
     redundancy_range = range(1, 5)
     imin_range = [4, 8, 16, 32]
