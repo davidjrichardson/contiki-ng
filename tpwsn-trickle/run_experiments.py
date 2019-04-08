@@ -27,7 +27,7 @@ mote_failure_probability = 200
 
 hostname = socket.gethostname()
 
-if hostname is 'grace-01':
+if hostname == 'grace-01':
     num_threads = 24
 else:
     num_threads = 12
