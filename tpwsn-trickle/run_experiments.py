@@ -39,50 +39,50 @@ repeats = range(0, 20)
 
 # Set the failure range per-compute node
 if hostname == 'grace-01':
-    redundancy_range = range(1,3)
+    redundancy_range = range(1, 3)
     imin_range = [4, 8]
-    imax_range = range(5, 11)
+    imax_range = range(5, 12, 2)
 elif hostname == 'grace-02':
-    redundancy_range = range(1,3)
+    redundancy_range = range(1, 3)
     imin_range = [4, 8]
-    imax_range = range(11, 17)
+    imax_range = range(11, 18, 2)
 elif hostname == 'grace-03':
-    redundancy_range = range(1,3)
+    redundancy_range = range(1, 3)
     imin_range = [16, 32]
-    imax_range = range(5, 11)
+    imax_range = range(5, 12, 2)
 elif hostname == 'grace-04':
-    redundancy_range = range(1,3)
+    redundancy_range = range(1, 3)
     imin_range = [16, 32]
-    imax_range = range(11, 17)
+    imax_range = range(11, 18, 2)
 elif hostname == 'grace-05':
-    redundancy_range = range(3,5)
+    redundancy_range = range(3, 5)
     imin_range = [4, 8]
-    imax_range = range(5, 11)
+    imax_range = range(5, 12, 2)
 elif hostname == 'grace-06':
-    redundancy_range = range(3,5)
+    redundancy_range = range(3, 5)
     imin_range = [4, 8]
-    imax_range = range(11, 17)
+    imax_range = range(11, 18, 2)
 elif hostname == 'grace-07':
-    redundancy_range = range(3,5)
+    redundancy_range = range(3, 5)
     imin_range = [16, 32]
-    imax_range = range(5, 11)
+    imax_range = range(5, 12, 2)
 elif hostname == 'grace-08':
-    redundancy_range = range(3,5)
+    redundancy_range = range(3, 5)
     imin_range = [16, 32]
-    imax_range = range(11, 17)
+    imax_range = range(11, 18, 2)
 else:
-    redundancy_range = range(1,5)
+    redundancy_range = range(1, 5)
     imin_range = [4, 8, 16, 32]
-    imax_range = range(5, 17)
+    imax_range = range(5, 18, 2)
 
 # Constant parameter space between nodes
 experiment_fail_modes = ["random", "location"]
-experiment_fail_range = range(1, 17)
-experiment_recovery_range = range(1, 16)
+experiment_delay_range = range(1, 18, 2)
+experiment_max_fail_range = range(1, 17, 2)
 
 experiment_size = 15 # Number of motes along one axis (forms a square)
-experiment_space = list(itertools.product(experiment_fail_range, experiment_fail_modes, redundancy_range, 
-                                          imin_range, imax_range, experiment_recovery_range, repeats))
+experiment_space = list(itertools.product(experiment_delay_range, experiment_fail_modes, redundancy_range, 
+                                          imin_range, imax_range, experiment_max_fail_range, repeats))
 
 control_recovery_range = [0]
 control_fail_range = [0]
@@ -252,7 +252,7 @@ if __name__ == "__main__":
     print("Running {n} experiments (size is {m}x{m} grid) on {host}".format(n=len(experiment_space), 
                                                                             m=experiment_size, host=hostname))
     print("""Experiment parameters are:
-        - Redundancy range: {range},
+        - Redundancy const. range (k): {range},
         - imin range: {imin},
         - imax range: {imax}\n\n""".format(range=list(redundancy_range), imin=list(imin_range), 
                                            imax=list(imax_range)))
