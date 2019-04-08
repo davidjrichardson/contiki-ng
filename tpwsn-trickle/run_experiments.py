@@ -7,6 +7,7 @@ import re
 import math
 import socket
 import tqdm
+import datetime
 
 from collections import namedtuple
 from lxml import etree
@@ -255,6 +256,7 @@ if __name__ == "__main__":
         - imin range: {imin},
         - imax range: {imax}\n\n""".format(range=list(redundancy_range), imin=list(imin_range), 
                                            imax=list(imax_range)))
+    start_time = datetime.datetime.now()
 
     # Run the control experiments
     print("Running control experiment(s)")
@@ -289,3 +291,8 @@ if __name__ == "__main__":
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
         _ = list(tqdm.tqdm(p.imap(run_experiment, experiment_space), total=len(experiment_space)))
+
+    end_time = datetime.datetime.now()
+    total_time = end_time - start_time
+
+    print("Experiments ran for {time}".format(time=total_time))
