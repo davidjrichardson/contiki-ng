@@ -296,14 +296,14 @@ if __name__ == "__main__":
         params = control_re.match(control).groupdict()
         params.pop('r', -1)
         
-        # TODO: Check that the experiment is in the space for this script
         experiment = Experiment(**params)
-        tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
+        if experiment in control_space:
+            tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
 
-        if control_times.get(experiment):
-            control_times[experiment].append(tick_time)
-        else:
-            control_times[experiment] = [tick_time]
+            if control_times.get(experiment):
+                control_times[experiment].append(tick_time)
+            else:
+                control_times[experiment] = [tick_time]
 
     # Run the test sims
     print("Running experiments")
