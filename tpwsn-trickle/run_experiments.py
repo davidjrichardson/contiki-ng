@@ -14,8 +14,11 @@ from lxml import etree
 from multiprocessing import Pool
 from pathlib import Path
 
+hostname = socket.gethostname()
+
 contiki_dir = Path('..')
 experiment_dir = Path(contiki_dir, 'tpwsn-trickle/experiments')
+sentinel_file = Path(experiment_dir, 'sentinel.{host}'.format(host=hostname))
 abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.js')
@@ -24,8 +27,6 @@ sim_template = Path(contiki_dir, 'tpwsn-trickle/sim_template.csc')
 Experiment = namedtuple('Experiment', ['d', 'k', 'imin', 'n', 't', 'imax'])
 
 mote_failure_probability = 200
-
-hostname = socket.gethostname()
 
 if hostname == 'grace-01':
     num_threads = 24
@@ -258,11 +259,28 @@ if __name__ == "__main__":
                                            imax=list(imax_range)))
     start_time = datetime.datetime.now()
 
-    # Run the control experiments
-    print("Running control experiment(s)")
-    os.chdir(str(experiment_dir))
-    with Pool(num_threads) as p:
-        _ = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
+    completed_control = False
+
+    if (os.path.exists(sentinel_file)):
+        with open(str(sentinel_file, "r")) as sentinel:
+            sentinel_value = int(sentinel.read().strip())
+            # Check if the hash is the same for the control space
+            completed_control = (sentinel_value == hash(tuple(control_space)))
+
+    if completed_control:
+        # Skip running the control experiments
+        print("Control experiments already run, skipping...")
+    else:
+        # Run the control experiments
+        print("Running control experiment(s)")
+        os.chdir(str(experiment_dir))
+        with Pool(num_threads) as p:
+            _ = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
+        
+        # Write the sentinel once this is all done
+        sentinel_value = hash(list(control_space))
+        with open(str(sentinel_file, "w")) as sentinel:
+            sentinel.write(sentinel_value)
 
     # Process the control experiments to get the run times
     print("Getting runtime(s) from the control experiments")
@@ -278,6 +296,7 @@ if __name__ == "__main__":
         params = control_re.match(control).groupdict()
         params.pop('r', -1)
         
+        # TODO: Check that the experiment is in the space for this script
         experiment = Experiment(**params)
         tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
 

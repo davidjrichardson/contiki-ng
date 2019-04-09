@@ -57,6 +57,8 @@ importPackage(org.contikios.cooja.interfaces);
 
 DEBUG = false;
 WRITE_OUTPUT = false;
+// Timeout of 30 minutes of simulation time
+TIMEOUT(1800000);
 
 /** Load the sim parameters from the filesystem
  * maxFailureCount - The maximum number of nodes that can fail at once
