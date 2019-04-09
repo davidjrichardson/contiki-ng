@@ -18,7 +18,6 @@ hostname = socket.gethostname()
 
 contiki_dir = Path('..')
 experiment_dir = Path(contiki_dir, 'tpwsn-trickle/experiments')
-sentinel_file = Path(experiment_dir, 'sentinel.{host}'.format(host=hostname))
 abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.js')
@@ -162,8 +161,8 @@ def run_control(experiment):
 
     os.chdir(str(abs_dir))
     sim_seed = 12345678 + run
-    param_dir = Path(experiment_dir, "control-{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
-                      imax, run, recovery))
+    param_dir = Path(experiment_dir, "control-{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
+            imin=imin, imax=imax, max_fail=motes, mode=mode, run=run))
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
@@ -211,8 +210,8 @@ def run_experiment(experiment):
 
     os.chdir(str(abs_dir))
     sim_seed = 123456789 + run
-    param_dir = Path(experiment_dir, "{0}-{1}-{2}-{3}-{4}-{6}-run{5}".format(motes, mode, k, imin, 
-                      imax, run, recovery))
+    param_dir = Path(experiment_dir, "{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
+            imin=imin, imax=imax, max_fail=motes, mode=mode, run=run))
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
@@ -259,51 +258,42 @@ if __name__ == "__main__":
                                            imax=list(imax_range)))
     start_time = datetime.datetime.now()
 
-    completed_control = False
-
-    if (os.path.exists(sentinel_file)):
-        with open(str(sentinel_file, "r")) as sentinel:
-            sentinel_value = int(sentinel.read().strip())
-            # Check if the hash is the same for the control space
-            completed_control = (sentinel_value == hash(tuple(control_space)))
-
-    if completed_control:
-        # Skip running the control experiments
-        print("Control experiments already run, skipping...")
-    else:
-        # Run the control experiments
-        print("Running control experiment(s)")
-        os.chdir(str(experiment_dir))
-        with Pool(num_threads) as p:
-            _ = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
-        
-        # Write the sentinel once this is all done
-        sentinel_value = hash(list(control_space))
-        with open(str(sentinel_file, "w")) as sentinel:
-            sentinel.write(sentinel_value)
+    # Run the control experiments
+    print("Running control experiment(s)")
+    os.chdir(str(experiment_dir))
+    with Pool(num_threads) as p:
+        _ = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
 
     # Process the control experiments to get the run times
     print("Getting runtime(s) from the control experiments")
     os.chdir(str(abs_dir))
     
-    exp_re = re.compile(r'(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
-    control_re = re.compile(r'control-(?P<n>\d+)-(?P<t>\w+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<d>\d+)-run(?P<r>\d)')
+
+    # {delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}
+    exp_re = re.compile(r'(?P<d>\d+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<n>\d+)-(?P<t>\w+)-run(?P<r>\d)')
+    control_re = re.compile(r'control-(?P<d>\d+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<n>\d+)-(?P<t>\w+)-run(?P<r>\d)')
     control_experiments = list(filter(lambda x: os.path.isdir(str(Path(experiment_dir, x))) and 'control' in x, 
                                       os.listdir(str(experiment_dir))))
-  
-    for control in control_experiments:
+
+
+    for control in tqdm.tqdm(control_experiments):
         control_dir = Path(experiment_dir, control)
         params = control_re.match(control).groupdict()
-        params.pop('r', -1)
-        
-        experiment = Experiment(**params)
-        if experiment in control_space:
-            tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
 
-            if control_times.get(experiment):
-                control_times[experiment].append(tick_time)
-            else:
-                control_times[experiment] = [tick_time]
+        experiment_tuple = (int(params["d"]), params["t"], int(params["k"]), int(params["imin"]), 
+                int(params["imax"]), int(params["n"]), int(params["r"]))
+
+        if experiment_tuple in control_space:
+            params.pop('r', -1)
+
+            experiment = Experiment(**params)
+            if experiment in control_space:
+                tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
+
+                if control_times.get(experiment):
+                    control_times[experiment].append(tick_time)
+                else:
+                    control_times[experiment] = [tick_time]
 
     # Run the test sims
     print("Running experiments")
