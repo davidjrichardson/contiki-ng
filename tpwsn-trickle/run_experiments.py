@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 import os
 import itertools
+import functools
 import html
 import subprocess
 import re
@@ -8,10 +10,11 @@ import math
 import socket
 import tqdm
 import datetime
+import pickle
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from lxml import etree
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 from pathlib import Path
 
 hostname = socket.gethostname()
@@ -90,23 +93,60 @@ control_fail_mode = ["none"]
 
 control_space = list(itertools.product(control_fail_range, control_fail_mode, redundancy_range, imin_range, 
                                        imax_range, control_recovery_range, repeats))
-control_times = {}
+    
+
+def parse_experiment(filename):
+    with open(filename, "rt") as log_file:
+        data_raw = map(str.strip, log_file.readlines())
+        stats = {}
+
+        msgs_sent_exp = re.compile(r'Messages sent: (?P<count>\d+)')
+        total_crashes_exp = re.compile(r'Total crashes: (?P<crashes>\d+)')
+        failed_motes_exp = re.compile(r'Motes currently failed \(\d+\): {(?P<motes>.+)}')
+        reporting_correct_exp = re.compile(r'Motes reporting correctly: (?P<correct>\d+)')
+        reporting_incorrectly_exp = re.compile(r'Motes reporting incorrectly: \[(?P<incorrect>.+)\]')
+        coverage_exp = re.compile(r'Coverage: (?P<coverage>\d+)')
+        mote_name_exp = re.compile(r'(?P<mote>Sky \d+)')
+
+        for line in data_raw:
+            if msgs_sent_exp.match(line):
+                stats["messages"] = msgs_sent_exp.match(line).groupdict().get("count")
+            elif total_crashes_exp.match(line):
+                stats["total_crashes"] = total_crashes_exp.match(line).groupdict().get("crashes")
+            elif failed_motes_exp.match(line):
+                motes_raw = list(map(str.strip, failed_motes_exp.match(line).groupdict().get("motes").split(",")))
+                stats["failed_at_end"] = list(map(lambda x: mote_name_exp.search(x).groupdict().get("mote"), motes_raw))
+            elif reporting_correct_exp.match(line):
+                stats["reporting_ok"] = reporting_correct_exp.match(line).groupdict().get("correct")
+            elif reporting_incorrectly_exp.match(line):
+                motes_raw = reporting_incorrectly_exp.match(line).groupdict().get("incorrect")
+                stats["reporting_bad"] = list(map(str.strip, motes_raw.split(",")))
+            elif coverage_exp.match(line):
+                stats["coverage"] = coverage_exp.match(line).groupdict().get("coverage")
+
+        if not stats.get("reporting_bad"):
+            stats["reporting_bad"] = []
+        if not stats.get("failed_at_end"):
+            stats["failed_at_end"] = []
+
+        return stats
 
 
 def render_js(params, stop_tick=0):
     motes, mode, k, imin, imax, recovery, run = params
 
     param_string = """var runNumber = {run};
-    var maxFailureCount = {motes};
-    var trickleIMin = {imin};
-    var trickleIMax = {imax};
-    var trickleRedundancyConst = {k};
-    var failureMode = "{mode}";
-    var moteFailureProbability = {mote_failure_probability};
-    var simulationStopTick = {stop_tick};""".format(run=run, motes=motes, recovery=recovery, 
-                                                    imin=imin, imax=imax, k=k, mode=mode,
-                                                    mote_failure_probability=mote_failure_probability, 
-                                                    stop_tick=stop_tick)
+var maxFailureCount = {motes};
+var trickleIMin = {imin};
+var trickleIMax = {imax};
+var trickleRedundancyConst = {k};
+var failureMode = "{mode}";
+var moteRecoveryDelay = {recovery};
+var moteFailureProbability = {mote_failure_probability};
+var simulationStopTick = {stop_tick};""".format(run=run, motes=motes, recovery=recovery, 
+                                                imin=imin, imax=imax, k=k, mode=mode,
+                                                mote_failure_probability=mote_failure_probability, 
+                                                stop_tick=stop_tick)
             
     return param_string
     
@@ -183,6 +223,13 @@ def run_control(experiment):
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
                     "-nogui=sim.csc", "-contiki=../../.."], stdout=logfile_handle)
 
+    # Create the key for the control data dict
+    experiment_key = Experiment(d=recovery, k=k, imin=imin, imax=imax, n=motes, t=mode)
+    tick_time = parse_control('COOJA.testlog')
+    control_data = parse_experiment('COOJA.testlog')
+
+    return experiment_key, tick_time, control_data
+
 
 def parse_control(file_path):
     # Parse the COOJA.testlog file
@@ -205,7 +252,7 @@ def filter_experiments(experiments, mask):
     return list(filter(lambda x: mask_set <= set(x._asdict().items()), experiments))
 
 
-def run_experiment(experiment):
+def run_experiment(experiment, control_times):
     motes, mode, k, imin, imax, recovery, run = experiment
 
     os.chdir(str(abs_dir))
@@ -217,11 +264,11 @@ def run_experiment(experiment):
     cooja_out = Path(param_dir, "experiment.log")
 
     # Get the duration of the simulation
-    exp_tuple = Experiment(d='', k=str(k), imin=str(imin), imax=str(imax), n='', t='')
+    exp_tuple = Experiment(d='', k=k, imin=imin, imax=imax, n='', t='')
     tick_key = filter_experiments(control_times.keys(), exp_tuple)
 
     if not tick_key:
-        print("Cannot run experiment " + str(experiment) + " because there is no control data")
+        print("Cannot run experiment " + str(exp_tuple) + " because there is no control data")
         return
         
     tick = int(math.ceil(np.average(control_times[tick_key[0]])))
@@ -242,6 +289,11 @@ def run_experiment(experiment):
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
                     "-nogui=sim.csc", "-contiki=../../.."], stdout=logfile_handle)
 
+    experiment_key = Experiment(d=recovery, k=k, imin=imin, imax=imax, n=motes, t=mode)
+    results = parse_experiment("COOJA.testlog")
+
+    return experiment_key, results
+
 
 # Run the control experiments and then run the 
 if __name__ == "__main__":
@@ -258,49 +310,47 @@ if __name__ == "__main__":
                                            imax=list(imax_range)))
     start_time = datetime.datetime.now()
 
+    # Multiprocessing shared memory/locks etc
+    pool_manager = Manager()
+    control_times = pool_manager.dict()
+    experiment_func = functools.partial(run_experiment, control_times=control_times)
+
     # Run the control experiments
     print("Running control experiment(s)")
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
-        _ = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
+        control_values = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
 
     # Process the control experiments to get the run times
     print("Getting runtime(s) from the control experiments")
     os.chdir(str(abs_dir))
-    
 
-    # {delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}
-    exp_re = re.compile(r'(?P<d>\d+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<n>\d+)-(?P<t>\w+)-run(?P<r>\d)')
-    control_re = re.compile(r'control-(?P<d>\d+)-(?P<k>\d+)-(?P<imin>\d+)-(?P<imax>\d+)-(?P<n>\d+)-(?P<t>\w+)-run(?P<r>\d)')
-    control_experiments = list(filter(lambda x: os.path.isdir(str(Path(experiment_dir, x))) and 'control' in x, 
-                                      os.listdir(str(experiment_dir))))
-
-
-    for control in tqdm.tqdm(control_experiments):
-        control_dir = Path(experiment_dir, control)
-        params = control_re.match(control).groupdict()
-
-        experiment_tuple = (int(params["d"]), params["t"], int(params["k"]), int(params["imin"]), 
-                int(params["imax"]), int(params["n"]), int(params["r"]))
-
-        if experiment_tuple in control_space:
-            params.pop('r', -1)
-
-            experiment = Experiment(**params)
-            if experiment in control_space:
-                tick_time = parse_control(str(Path(control_dir, 'COOJA.testlog')))
-
-                if control_times.get(experiment):
-                    control_times[experiment].append(tick_time)
-                else:
-                    control_times[experiment] = [tick_time]
+    # Collate the control results + execution times
+    control_results = defaultdict(list)
+    for key, tick, result in control_values:
+        control_times[key] = control_times.setdefault(key, []) + [tick]
+        control_results[key].append(result)
 
     # Run the test sims
     print("Running experiments")
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
-        _ = list(tqdm.tqdm(p.imap(run_experiment, experiment_space), total=len(experiment_space)))
+        results = list(tqdm.tqdm(p.imap(experiment_func, experiment_space), total=len(experiment_space)))
 
+    # Collate the experiment results
+    experimental_results = defaultdict(list)
+    for key, result in results:
+        experimental_results[key].append(result)
+
+    # Save the data
+    os.chdir(str(abs_dir))
+        
+    with open('experiment_data.pickle', 'wb') as handle:
+        pickle.dump(experimental_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('control_data.pickle', 'wb') as handle:
+        pickle.dump(control_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
     end_time = datetime.datetime.now()
     total_time = end_time - start_time
 
