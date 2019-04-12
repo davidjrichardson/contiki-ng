@@ -347,10 +347,10 @@ if __name__ == "__main__":
     # Save the data
     os.chdir(str(abs_dir))
         
-    with open('experiment_data.pickle', 'wb') as handle:
+    with open('experiment_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
         pickle.dump(experimental_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open('control_data.pickle', 'wb') as handle:
+    with open('control_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
         pickle.dump(control_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     end_time = datetime.datetime.now()
