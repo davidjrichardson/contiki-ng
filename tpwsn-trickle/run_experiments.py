@@ -328,8 +328,10 @@ if __name__ == "__main__":
     # Collate the control results + execution times
     control_results = defaultdict(list)
     for key, tick, result in control_values:
-        control_times[key] = control_times.setdefault(key, []) + [tick]
-        control_results[key].append(result)
+        # If the experiment didn't terminate then discard
+        if tick:
+            control_times[key] = control_times.setdefault(key, []) + [tick]
+            control_results[key].append(result)
 
     # Run the test sims
     print("Running experiments")
