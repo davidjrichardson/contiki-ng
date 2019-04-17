@@ -11,6 +11,8 @@ import socket
 import tqdm
 import datetime
 import pickle
+import tarfile
+import shutil
 
 from collections import namedtuple, defaultdict
 from lxml import etree
@@ -201,8 +203,9 @@ def run_control(experiment):
 
     os.chdir(str(abs_dir))
     sim_seed = 12345678 + run
-    param_dir = Path(experiment_dir, "control-{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
-            imin=imin, imax=imax, max_fail=motes, mode=mode, run=run))
+    param_dirname = "control-{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
+            imin=imin, imax=imax, max_fail=motes, mode=mode, run=run)
+    param_dir = Path(experiment_dir, param_dirname)
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
@@ -227,6 +230,14 @@ def run_control(experiment):
     experiment_key = Experiment(d=recovery, k=k, imin=imin, imax=imax, n=motes, t=mode)
     tick_time = parse_control('COOJA.testlog')
     control_data = parse_experiment('COOJA.testlog')
+    control_data['end_tick'] = tick_time
+
+    # Change out to the parent dir, tar the experiment, and remove the folder
+    os.chdir('..')
+    experiment_tarball = param_dirname + '.tar.gz'
+    with tarfile.open(experiment_tarball, 'w:gz') as tar:
+        tar.add(param_dirname, arcname=os.path.basename(param_dir))
+    shutil.rmtree(param_dirname)
 
     return experiment_key, tick_time, control_data
 
@@ -257,8 +268,11 @@ def run_experiment(experiment, control_times):
 
     os.chdir(str(abs_dir))
     sim_seed = 123456789 + run
-    param_dir = Path(experiment_dir, "{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
-            imin=imin, imax=imax, max_fail=motes, mode=mode, run=run))
+    param_dirname = "{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
+            imin=imin, imax=imax, max_fail=motes, mode=mode, run=run)
+    param_dir = Path(experiment_dir, param_dirname)
+    # param_dir = Path(experiment_dir, "{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
+    #         imin=imin, imax=imax, max_fail=motes, mode=mode, run=run))
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
@@ -292,6 +306,13 @@ def run_experiment(experiment, control_times):
     experiment_key = Experiment(d=recovery, k=k, imin=imin, imax=imax, n=motes, t=mode)
     results = parse_experiment("COOJA.testlog")
 
+    # Change out to the parent dir, tar the experiment, and remove the folder
+    os.chdir('..')
+    experiment_tarball = param_dirname + '.tar.gz'
+    with tarfile.open(experiment_tarball, 'w:gz') as tar:
+        tar.add(param_dirname, arcname=os.path.basename(param_dir))
+    shutil.rmtree(param_dirname)
+
     return experiment_key, results
 
 
@@ -315,23 +336,43 @@ if __name__ == "__main__":
     control_times = pool_manager.dict()
     experiment_func = functools.partial(run_experiment, control_times=control_times)
 
-    # Run the control experiments
-    print("Running control experiment(s)")
-    os.chdir(str(experiment_dir))
-    with Pool(num_threads) as p:
-        control_values = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
+    control_file = 'control_data-{host}.pickle'.format(host=hostname)
 
-    # Process the control experiments to get the run times
-    print("Getting runtime(s) from the control experiments")
+    # Check if the control file exists - if it does then we can skip re-running the experiments
     os.chdir(str(abs_dir))
 
-    # Collate the control results + execution times
-    control_results = defaultdict(list)
-    for key, tick, result in control_values:
-        # If the experiment didn't terminate then discard
-        if tick:
-            control_times[key] = control_times.setdefault(key, []) + [tick]
-            control_results[key].append(result)
+    if os.path.exists(control_file):
+        print("Loading control experiment data from pickle")
+        with open(control_file, 'rb') as handle:
+            control_results = pickle.load(handle)
+
+            # Control_results is key -> list
+            # list contains dicts with end_tick
+            # Want to map key -> list(dict[end_tick]) into key -> list(end_tick)
+            for key, values in control_results.items():
+                filtered = filter(lambda x: x['end_tick'], values)
+                control_times[key] = list(map(lambda x: x['end_tick'], filtered))
+    else:
+        # Run the control experiments
+        print("Running control experiment(s)")
+        os.chdir(str(experiment_dir))
+        with Pool(num_threads) as p:
+            control_values = list(tqdm.tqdm(p.imap(run_control, control_space), total=len(control_space)))
+
+        # Process the control experiments to get the run times
+        print("Getting runtime(s) from the control experiments")
+        os.chdir(str(abs_dir))
+
+        # Collate the control results + execution times
+        control_results = defaultdict(list)
+        for key, tick, result in control_values:
+            # If the experiment didn't terminate then discard
+            if tick:
+                control_times[key] = control_times.setdefault(key, []) + [tick]
+                control_results[key].append(result)
+
+        with open(control_file, 'wb') as handle:
+            pickle.dump(control_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Run the test sims
     print("Running experiments")
@@ -350,9 +391,6 @@ if __name__ == "__main__":
     with open('experiment_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
         pickle.dump(experimental_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open('control_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
-        pickle.dump(control_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
     end_time = datetime.datetime.now()
     total_time = end_time - start_time
 
