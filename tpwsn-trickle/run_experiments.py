@@ -23,6 +23,7 @@ hostname = socket.gethostname()
 
 contiki_dir = Path('..')
 experiment_dir = Path(contiki_dir, 'tpwsn-trickle/experiments')
+experiment_done_dir = Path(experiment_dir, '.done')
 abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 script_template = Path(contiki_dir, 'tpwsn-trickle/sim-script.js')
@@ -40,7 +41,7 @@ else:
 memory_size = '-mx2048m'
 
 # Experiment params
-repeats = range(0, 20)
+repeats = range(0, 1)
 
 # Set the failure range per-compute node
 if hostname == 'grace-01':
@@ -76,16 +77,16 @@ elif hostname == 'grace-08':
     imin_range = [16, 32]
     imax_range = range(13, 18, 2)
 else:
-    redundancy_range = range(1, 5)
-    imin_range = [4, 8, 16, 32]
-    imax_range = range(5, 18, 2)
+    redundancy_range = range(1, 2)
+    imin_range = [4]
+    imax_range = range(5, 6)
 
 # Constant parameter space between nodes
-experiment_fail_modes = ["random", "location"]
-experiment_delay_range = range(1, 18, 2)
-experiment_max_fail_range = range(1, 17, 2)
+experiment_fail_modes = ["random"]
+experiment_delay_range = range(1, 2)
+experiment_max_fail_range = range(1, 2)
 
-experiment_size = 15 # Number of motes along one axis (forms a square)
+experiment_size = 5 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_delay_range, experiment_fail_modes, redundancy_range, 
                                           imin_range, imax_range, experiment_max_fail_range, repeats))
 
@@ -266,52 +267,72 @@ def filter_experiments(experiments, mask):
 def run_experiment(experiment, control_times):
     motes, mode, k, imin, imax, recovery, run = experiment
 
-    os.chdir(str(abs_dir))
-    sim_seed = 123456789 + run
+    experiment_key = Experiment(d=recovery, k=k, imin=imin, imax=imax, n=motes, t=mode)
     param_dirname = "{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
             imin=imin, imax=imax, max_fail=motes, mode=mode, run=run)
+
+    done_file = Path(experiment_done_dir, '{hash}.done'.format(hash=hash(param_dirname.encode())))
     param_dir = Path(experiment_dir, param_dirname)
-    # param_dir = Path(experiment_dir, "{delay}-{k}-{imin}-{imax}-{max_fail}-{mode}-run{run}".format(delay=recovery, k=k, 
-    #         imin=imin, imax=imax, max_fail=motes, mode=mode, run=run))
+    experiment_tarball = Path(experiment_dir, param_dirname + '.tar.gz')
     sim_file = Path(param_dir, 'sim.csc')
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
 
-    # Get the duration of the simulation
-    exp_tuple = Experiment(d='', k=k, imin=imin, imax=imax, n='', t='')
-    tick_key = filter_experiments(control_times.keys(), exp_tuple)
+    os.chdir(str(abs_dir))
+    if done_file.exists():
+        # Extract the tarball
+        with tarfile.open(str(experiment_tarball), 'r:gz') as tar:
+            os.chdir(str(experiment_dir))
+            tar.extractall()
+            os.chdir(str(abs_dir))
 
-    if not tick_key:
-        print("Cannot run experiment " + str(exp_tuple) + " because there is no control data")
-        return
+        # Get the data out of the results files
+        os.chdir(str(param_dir))
+        results = parse_experiment("COOJA.testlog")
+
+        # Remove the directory (again)
+        os.chdir(str(abs_dir))
+        shutil.rmtree(str(param_dir))
+    else:
+        # Actually run the experiment
+        sim_seed = 123456789 + run
+
+        # Get the duration of the simulation
+        exp_tuple = Experiment(d='', k=k, imin=imin, imax=imax, n='', t='')
+        tick_key = filter_experiments(control_times.keys(), exp_tuple)
+
+        if not tick_key:
+            print("Cannot run experiment " + str(exp_tuple) + " because there is no control data")
+            return
+            
+        tick = int(math.ceil(np.average(control_times[tick_key[0]])))
+
+        if not param_dir.exists():
+            param_dir.mkdir(parents=True)
+
+        with open(str(sim_file), 'wt') as sim:
+            sim.write(render_sim(experiment_size, sim_seed))
         
-    tick = int(math.ceil(np.average(control_times[tick_key[0]])))
+        with open(str(param_file), 'wt') as param:
+            param.write(render_js(experiment, tick))
 
-    if not param_dir.exists():
-        param_dir.mkdir(parents=True)
+        # Create a log file for this experiment
+        logfile_handle = open(str(cooja_out), "w")
 
-    with open(str(sim_file), 'wt') as sim:
-        sim.write(render_sim(experiment_size, sim_seed))
-    
-    with open(str(param_file), 'wt') as param:
-        param.write(render_js(experiment, tick))
+        os.chdir(str(param_dir))
+        subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
+                        "-nogui=sim.csc", "-contiki=../../.."], stdout=logfile_handle)
 
-    # Create a log file for this experiment
-    logfile_handle = open(str(cooja_out), "w")
+        results = parse_experiment("COOJA.testlog")
 
-    os.chdir(str(param_dir))
-    subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
-                    "-nogui=sim.csc", "-contiki=../../.."], stdout=logfile_handle)
+        # Change out to the parent dir, tar the experiment, and remove the folder
+        os.chdir(str(abs_dir))
+        with tarfile.open(str(experiment_tarball), 'w:gz') as tar:
+            tar.add(param_dir, arcname=os.path.basename(param_dir))
+        shutil.rmtree(str(param_dir))
 
-    experiment_key = Experiment(d=recovery, k=k, imin=imin, imax=imax, n=motes, t=mode)
-    results = parse_experiment("COOJA.testlog")
-
-    # Change out to the parent dir, tar the experiment, and remove the folder
-    os.chdir('..')
-    experiment_tarball = param_dirname + '.tar.gz'
-    with tarfile.open(experiment_tarball, 'w:gz') as tar:
-        tar.add(param_dirname, arcname=os.path.basename(param_dir))
-    shutil.rmtree(param_dirname)
+        # Mark the experiment as done
+        done_file.touch()
 
     return experiment_key, results
 
@@ -321,6 +342,10 @@ if __name__ == "__main__":
     # Make the experiment directory
     if not os.path.exists(str(experiment_dir)):
         os.makedirs(str(experiment_dir))
+
+    # Make the experiment 'done' directory
+    if not os.path.exists(str(experiment_done_dir)):
+        os.makedirs(str(experiment_done_dir))
 
     print("Running {n} experiments (size is {m}x{m} grid) on {host}".format(n=len(experiment_space), 
                                                                             m=experiment_size, host=hostname))
@@ -379,6 +404,7 @@ if __name__ == "__main__":
     os.chdir(str(experiment_dir))
     with Pool(num_threads) as p:
         results = list(tqdm.tqdm(p.imap(experiment_func, experiment_space), total=len(experiment_space)))
+        # TODO: Serialise the experiment_space so we can resume 
 
     # Collate the experiment results
     experimental_results = defaultdict(list)
@@ -388,7 +414,7 @@ if __name__ == "__main__":
     # Save the data
     os.chdir(str(abs_dir))
         
-    with open('experiment_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
+    with open('results_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
         pickle.dump(experimental_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.datetime.now()
