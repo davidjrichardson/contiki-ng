@@ -292,7 +292,7 @@ def run_experiment(experiment, control_times):
 
         # Remove the directory (again)
         os.chdir(str(abs_dir))
-        shutil.rmtree(str(param_dir))
+        shutil.rmtree(str(param_dir), ignore_errors=True)
     else:
         # Actually run the experiment
         sim_seed = 123456789 + run
@@ -329,7 +329,7 @@ def run_experiment(experiment, control_times):
         os.chdir(str(abs_dir))
         with tarfile.open(str(experiment_tarball), 'w:gz') as tar:
             tar.add(param_dir, arcname=os.path.basename(param_dir))
-        shutil.rmtree(str(param_dir))
+        shutil.rmtree(str(param_dir), ignore_errors=True)
 
         # Mark the experiment as done
         done_file.touch()
