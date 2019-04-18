@@ -238,7 +238,7 @@ def run_control(experiment):
     experiment_tarball = param_dirname + '.tar.gz'
     with tarfile.open(experiment_tarball, 'w:gz') as tar:
         tar.add(param_dirname, arcname=os.path.basename(param_dir))
-    shutil.rmtree(param_dirname)
+    shutil.rmtree(param_dirname, ignore_errors=True)
 
     return experiment_key, tick_time, control_data
 
