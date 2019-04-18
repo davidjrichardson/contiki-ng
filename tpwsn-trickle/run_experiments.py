@@ -41,7 +41,7 @@ else:
 memory_size = '-mx2048m'
 
 # Experiment params
-repeats = range(0, 1)
+repeats = range(0, 20)
 
 # Set the failure range per-compute node
 if hostname == 'grace-01':
@@ -77,16 +77,16 @@ elif hostname == 'grace-08':
     imin_range = [16, 32]
     imax_range = range(13, 18, 2)
 else:
-    redundancy_range = range(1, 2)
-    imin_range = [4]
-    imax_range = range(5, 6)
+    redundancy_range = range(1, 5)
+    imin_range = [4, 8, 16, 32]
+    imax_range = range(5, 18, 2)
 
 # Constant parameter space between nodes
-experiment_fail_modes = ["random"]
-experiment_delay_range = range(1, 2)
-experiment_max_fail_range = range(1, 2)
+experiment_fail_modes = ["random", "location"]
+experiment_delay_range = range(1, 18, 2)
+experiment_max_fail_range = range(1, 17, 2)
 
-experiment_size = 5 # Number of motes along one axis (forms a square)
+experiment_size = 15 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_delay_range, experiment_fail_modes, redundancy_range, 
                                           imin_range, imax_range, experiment_max_fail_range, repeats))
 
