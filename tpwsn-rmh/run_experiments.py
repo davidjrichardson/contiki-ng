@@ -229,7 +229,7 @@ def run_control(experiment):
     experiment_tarball = param_dirname + '.tar.gz'
     with tarfile.open(experiment_tarball, 'w:gz') as tar:
         tar.add(param_dirname, arcname=os.path.basename(param_dir))
-    #shutil.rmtree(param_dirname, ignore_errors=True)
+    shutil.rmtree(param_dirname, ignore_errors=True)
 
     return experiment_key, tick_time, control_data
 
@@ -389,9 +389,6 @@ if __name__ == "__main__":
         with open(control_file, 'wb') as handle:
             pickle.dump(control_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    print(control_results)
-
-    """
     # Run the test sims
     print("Running experiments")
     os.chdir(str(experiment_dir))
@@ -408,7 +405,7 @@ if __name__ == "__main__":
         
     with open('results_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
         pickle.dump(experimental_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-"""
+
     end_time = datetime.datetime.now()
     total_time = end_time - start_time
 
