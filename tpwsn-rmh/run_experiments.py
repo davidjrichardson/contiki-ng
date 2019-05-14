@@ -199,9 +199,6 @@ def run_control(experiment):
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
 
-    print(str(param_dir))
-    print(str(os.getcwd()))
-
     if not param_dir.exists():
         param_dir.mkdir(parents=True)
 
