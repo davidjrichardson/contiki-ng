@@ -65,7 +65,7 @@ WRITE_OUTPUT = false;
 * simulationStopTick - The simulation tick to stop the simulation at (and start collecting data)
 * failureMode - The mote failure mode for the sim
 **/
-load("/Users/david/Projects/contiki/tpwsn-rmh/params.js");
+load("params.js");
 
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");

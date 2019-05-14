@@ -199,6 +199,9 @@ def run_control(experiment):
     param_file = Path(param_dir, 'params.js')
     cooja_out = Path(param_dir, "experiment.log")
 
+    print(str(param_dir))
+    print(str(os.getcwd()))
+
     if not param_dir.exists():
         param_dir.mkdir(parents=True)
 
@@ -210,8 +213,6 @@ def run_control(experiment):
 
     # Create a log file for this experiment
     logfile_handle = open(str(cooja_out), "w")
-
-    # TODO: There's an issue with loading the motes - will need to make a new sim file template
 
     os.chdir(str(param_dir))
     subprocess.call(["java", memory_size, "-jar", "../../../tools/cooja/dist/cooja.jar", 
@@ -228,7 +229,7 @@ def run_control(experiment):
     experiment_tarball = param_dirname + '.tar.gz'
     with tarfile.open(experiment_tarball, 'w:gz') as tar:
         tar.add(param_dirname, arcname=os.path.basename(param_dir))
-    shutil.rmtree(param_dirname, ignore_errors=True)
+    #shutil.rmtree(param_dirname, ignore_errors=True)
 
     return experiment_key, tick_time, control_data
 
@@ -350,7 +351,7 @@ if __name__ == "__main__":
     control_times = pool_manager.dict()
     experiment_func = functools.partial(run_experiment, control_times=control_times)
 
-    control_file = 'control_data-{host}.pickle'.format(host=hostname)
+    control_file = 'control_data.pickle'
 
     # Check if the control file exists - if it does then we can skip re-running the experiments
     os.chdir(str(abs_dir))
@@ -388,6 +389,9 @@ if __name__ == "__main__":
         with open(control_file, 'wb') as handle:
             pickle.dump(control_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    print(control_results)
+
+    """
     # Run the test sims
     print("Running experiments")
     os.chdir(str(experiment_dir))
@@ -404,7 +408,7 @@ if __name__ == "__main__":
         
     with open('results_data-{host}.pickle'.format(host=hostname), 'wb') as handle:
         pickle.dump(experimental_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+"""
     end_time = datetime.datetime.now()
     total_time = end_time - start_time
 
