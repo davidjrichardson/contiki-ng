@@ -96,6 +96,8 @@ for each (var m in allMotes) write(m, "init " + trickleIMin + " " + trickleIMax 
 
 var tokenMap = new HashMap(allMotes.length);
 var consistentSet = new HashSet(allMotes.length);
+var cumilativeCoverage = new ArrayList(allMotes.length);
+cumilativeCoverage.add(sourceMote); // Add the source to the coverage list
 var messagesSent = 0;
 var totalCrashes = 0;
 
@@ -165,6 +167,10 @@ function failNode(failureMode) {
     failableMotes.remove(moteToFail);
     failedMoteMap.put(moteToFail, timeOfRestart);
     // log.log(failedMoteMap + "\n\n\n");
+    if (cumilativeCoverage.contains(moteToFail)) {
+        cumilativeCoverage.remove(moteToFail);
+        log.log("Nodes covered: " + cumilativeCoverage.size() +" at time " + time + "\n");
+    }
     write(moteToFail, "sleep " + moteRecoveryDelay);
     totalCrashes++;
 }
@@ -206,6 +212,11 @@ while (true) {
     // Keep track of messages sent
     if (msg.indexOf('Trickle TX') > -1) {
         messagesSent++;
+    }
+
+    if (msg.indexOf('Theirs is newer') > -1 && !cumilativeCoverage.contains(mote)) {
+        cumilativeCoverage.add(mote);
+        log.log("Nodes covered: " + cumilativeCoverage.size() +" at time " + time + "\n");
     }
 
     try {
