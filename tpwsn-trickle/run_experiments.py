@@ -45,48 +45,50 @@ repeats = range(0, 20)
 
 # Set the failure range per-compute node
 if hostname == 'grace-01':
-    redundancy_range = range(1, 3)
-    imin_range = [4, 8]
-    imax_range = range(5, 12, 2)
+    experiment_max_fail_range = range(1, 7, 2)
 elif hostname == 'grace-02':
-    redundancy_range = range(1, 3)
-    imin_range = [4, 8]
-    imax_range = range(13, 18, 2)
+    experiment_max_fail_range = range(8, 13, 2)
 elif hostname == 'grace-03':
-    redundancy_range = range(1, 3)
-    imin_range = [16, 32]
-    imax_range = range(5, 12, 2)
-elif hostname == 'grace-04':
-    redundancy_range = range(1, 3)
-    imin_range = [16, 32]
-    imax_range = range(13, 18, 2)
-elif hostname == 'grace-05':
-    redundancy_range = range(3, 5)
-    imin_range = [4, 8]
-    imax_range = range(5, 12, 2)
-elif hostname == 'grace-06':
-    redundancy_range = range(3, 5)
-    imin_range = [4, 8]
-    imax_range = range(13, 18, 2)
-elif hostname == 'grace-07':
-    redundancy_range = range(3, 5)
-    imin_range = [16, 32]
-    imax_range = range(5, 12, 2)
-elif hostname == 'grace-08':
-    redundancy_range = range(3, 5)
-    imin_range = [16, 32]
-    imax_range = range(13, 18, 2)
+    experiment_max_fail_range = range(14, 18, 2)
 else:
-    redundancy_range = range(1, 5)
-    imin_range = [4, 8, 16, 32]
-    imax_range = range(5, 18, 2)
+    experiment_max_fail_range = range(1, 19, 2)
+#     redundancy_range = range(1, 3)
+#     imin_range = [16, 32]
+#     imax_range = range(5, 12, 2)
+# elif hostname == 'grace-04':
+#     redundancy_range = range(1, 3)
+#     imin_range = [16, 32]
+#     imax_range = range(13, 18, 2)
+# elif hostname == 'grace-05':
+#     redundancy_range = range(3, 5)
+#     imin_range = [4, 8]
+#     imax_range = range(5, 12, 2)
+# elif hostname == 'grace-06':
+#     redundancy_range = range(3, 5)
+#     imin_range = [4, 8]
+#     imax_range = range(13, 18, 2)
+# elif hostname == 'grace-07':
+#     redundancy_range = range(3, 5)
+#     imin_range = [16, 32]
+#     imax_range = range(5, 12, 2)
+# elif hostname == 'grace-08':
+#     redundancy_range = range(3, 5)
+#     imin_range = [16, 32]
+#     imax_range = range(13, 18, 2)
+# else:
+#     redundancy_range = range(1, 5)
+#     imin_range = [4, 8, 16, 32]
+#     imax_range = range(5, 18, 2)
+
+redundancy_range = [2]
+imin_range = [16]
+imax_range = [10]
 
 # Constant parameter space between nodes
 experiment_fail_modes = ["random", "location"]
 experiment_delay_range = range(1, 18, 2)
-experiment_max_fail_range = range(1, 17, 2)
 
-experiment_size = 15 # Number of motes along one axis (forms a square)
+experiment_size = 21 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_delay_range, experiment_fail_modes, redundancy_range, 
                                           imin_range, imax_range, experiment_max_fail_range, repeats))
 

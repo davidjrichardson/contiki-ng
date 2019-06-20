@@ -44,38 +44,38 @@ memory_size = '-mx2048m'
 repeats = range(0, 20)
 
 # Set the failure range per-compute node
-if hostname == 'grace-01':
-    experiment_delay_range = range(1, 6, 1)
-    experiment_max_fail_range = range(1, 9, 1)
-elif hostname == 'grace-02':
-    experiment_delay_range = range(6, 11, 1)
-    experiment_max_fail_range = range(1, 9, 1)
-elif hostname == 'grace-03':
-    experiment_delay_range = range(11, 16, 1)
-    experiment_max_fail_range = range(1, 9, 1)
-elif hostname == 'grace-04':
-    experiment_delay_range = range(16, 21, 1)
-    experiment_max_fail_range = range(1, 9, 1)
-elif hostname == 'grace-05':
-    experiment_delay_range = range(1, 6, 1)
-    experiment_max_fail_range = range(9, 17, 1)
-elif hostname == 'grace-06':
-    experiment_delay_range = range(6, 11, 1)
-    experiment_max_fail_range = range(9, 17, 1)
-elif hostname == 'grace-07':
-    experiment_delay_range = range(11, 16, 1)
-    experiment_max_fail_range = range(9, 17, 1)
-elif hostname == 'grace-08':
-    experiment_delay_range = range(16, 21, 1)
-    experiment_max_fail_range = range(9, 17, 1)
-else:
-    experiment_delay_range = range(1, 2, 1)
-    experiment_max_fail_range = range(1, 2, 1)
 
+if hostname == 'grace-04':
+    experiment_max_fail_range = range(1, 7, 2)
+elif hostname == 'grace-05':
+    experiment_max_fail_range = range(8, 13, 2)
+elif hostname == 'grace-06':
+    experiment_max_fail_range = range(14, 18, 2)
+else:
+    experiment_max_fail_range = range(1, 19, 2)
+# elif hostname == 'grace-04':
+#     experiment_delay_range = range(16, 21, 1)
+#     experiment_max_fail_range = range(1, 9, 1)
+# elif hostname == 'grace-05':
+#     experiment_delay_range = range(1, 6, 1)
+#     experiment_max_fail_range = range(9, 17, 1)
+# elif hostname == 'grace-06':
+#     experiment_delay_range = range(6, 11, 1)
+#     experiment_max_fail_range = range(9, 17, 1)
+# elif hostname == 'grace-07':
+#     experiment_delay_range = range(11, 16, 1)
+#     experiment_max_fail_range = range(9, 17, 1)
+# elif hostname == 'grace-08':
+#     experiment_delay_range = range(16, 21, 1)
+#     experiment_max_fail_range = range(9, 17, 1)
+# else:
+#     experiment_max_fail_range = range(1, 2, 1)
+
+experiment_delay_range = range(1, 17, 2)
 # Constant parameter space between nodes
 experiment_fail_modes = ["random", "location"]
 
-experiment_size = 15 # Number of motes along one axis (forms a square)
+experiment_size = 21 # Number of motes along one axis (forms a square)
 experiment_space = list(itertools.product(experiment_delay_range, experiment_fail_modes,
                                           experiment_max_fail_range, repeats))
 
