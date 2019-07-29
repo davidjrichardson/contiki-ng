@@ -45,14 +45,7 @@ repeats = range(0, 20)
 
 # Set the failure range per-compute node
 
-if hostname == 'grace-04':
-    experiment_max_fail_range = range(1, 7, 2)
-elif hostname == 'grace-05':
-    experiment_max_fail_range = range(8, 13, 2)
-elif hostname == 'grace-06':
-    experiment_max_fail_range = range(14, 18, 2)
-else:
-    experiment_max_fail_range = range(1, 19, 2)
+experiment_max_fail_range = range(1, 19, 2)
 # elif hostname == 'grace-04':
 #     experiment_delay_range = range(16, 21, 1)
 #     experiment_max_fail_range = range(1, 9, 1)

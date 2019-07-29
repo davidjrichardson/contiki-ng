@@ -44,14 +44,7 @@ memory_size = '-mx2048m'
 repeats = range(0, 20)
 
 # Set the failure range per-compute node
-if hostname == 'grace-01':
-    experiment_max_fail_range = range(1, 7, 2)
-elif hostname == 'grace-02':
-    experiment_max_fail_range = range(8, 13, 2)
-elif hostname == 'grace-03':
-    experiment_max_fail_range = range(14, 18, 2)
-else:
-    experiment_max_fail_range = range(1, 19, 2)
+experiment_max_fail_range = range(1, 19, 2)
 #     redundancy_range = range(1, 3)
 #     imin_range = [16, 32]
 #     imax_range = range(5, 12, 2)

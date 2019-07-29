@@ -87,7 +87,7 @@ def parse_experiment(filename):
 
         msgs_sent_exp = re.compile(r'Messages sent: (?P<count>\d+)')
         announces_sent_exp = re.compile(r'Announcements sent: (?P<count>\d+)')
-        beacons_sent_exp = re.compile(r'Beacons sent: (?<count>\d+)')
+        beacons_sent_exp = re.compile(r'Beacons sent: (?P<count>\d+)')
         recov_ctrl_sent_exp = re.compile(r'Recovery ctrl messages sent: (?P<count>\d+)')
         recov_data_sent_exp = re.compile(r'Recovery data messages sent: (?P<count>\d+)')
         total_crashes_exp = re.compile(r'Total crashes: (?P<crashes>\d+)')
