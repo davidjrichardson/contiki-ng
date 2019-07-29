@@ -270,6 +270,7 @@ def run_experiment(experiment, control_times):
 
     os.chdir(str(abs_dir))
     if done_file.exists():
+        print("reading experiment ", experiment)
         # Extract the tarball
         with tarfile.open(str(experiment_tarball), 'r:gz') as tar:
             os.chdir(str(experiment_dir))
