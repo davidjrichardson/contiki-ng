@@ -251,9 +251,6 @@ while (true) {
             if (msg.indexOf('multihop message received \'hello\'') > -1 || msg.indexOf('sink received \'hello\'') > -1) {
                 consistentSet.add(mote);
                 tokenMap.putIfAbsent(mote, "hello");
-
-                log.log(consistentSet + "\n");
-                // log.log(mote + " reports hello (" + msg + ")\n");
             }
 
             // If all motes have reported consistency, report the time and end the sim
