@@ -21,6 +21,8 @@ WRITE_OUTPUT = false;
 **/
 load("params.js");
 
+TIMEOUT(300000, log.log("Sim time limit reached"));
+
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
 var HashMap = Java.type("java.util.HashMap");
