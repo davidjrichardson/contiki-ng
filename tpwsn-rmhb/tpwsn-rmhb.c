@@ -60,6 +60,7 @@ static struct uip_udp_conn *rmhb_conn;
 static uip_ipaddr_t ipaddr;     /* destination: link-local all-nodes multicast */
 static bool is_sink = false;
 static bool reset_scheduled = false;
+static bool disable_beacon = false;
 
 /* RMH-B Params */
 #define MSG_TYPE_CTRL 1
@@ -323,6 +324,7 @@ serial_handler(char *data) {
     bool seen_set = false;
     bool seen_print = false;
     bool seen_start = false;
+    bool seen_disable_beacon = false;
 
     // Iterate over the tokenised string
     while (ptr != NULL) {
@@ -353,6 +355,16 @@ serial_handler(char *data) {
                 LOG_INFO("Setting node status to SINK\n");
                 is_sink = true;
             }
+        }
+
+        // Parse serial input to disable beaconing
+        if (strcmp(ptr, "disable_beacon") == 0) {
+            LOG_INFO("Seen beacon disable\n");
+            seen_disable_beacon = true;
+        }
+        if (seen_disable_beacon) {
+            disable_beacon = true;
+            etimer_stop(&beacon_timer);
         }
 
         // Parse serial input to start the RMH sending process
@@ -390,8 +402,17 @@ serial_handler(char *data) {
 
         NETSTACK_RADIO.off();
         etimer_set(&rt, (delay * CLOCK_SECOND));
+        etimer_stop(&beacon_timer);
         reset_scheduled = true;
         leds_on(LEDS_ALL);
+
+        // Free up the neighbour table
+        tpwsn_nbr_table_t *e = list_head(neighbor_table);
+        while (e != NULL) {
+            memb_free(&neighbor_mem, e);
+
+            e = list_item_next(e);
+        }
     }
 }
 /*---------------------------------------------------------------------------*/
@@ -409,19 +430,24 @@ static void
 initialise(void) {
     token = 0;
     token_version = 0;
-    etimer_set(&beacon_timer, (beacon_period * CLOCK_SECOND));
+    if(!disable_beacon) {
+        etimer_set(&beacon_timer, (beacon_period * CLOCK_SECOND));
+    }
     // Set the announcement sequence going ASAP
     etimer_set(&announce_timer, (1 * CLOCK_SECOND));
+    // Initialise the neighbor table
+    list_init(neighbor_table);
 }
 /*---------------------------------------------------------------------------*/
 static void
 restart_node(void) {
     // Reset the internal state to emulate power loss
-    // TODO: stop the beacon timer & reset the neighbour table
     etimer_stop(&rt);
     reset_scheduled = false;
     NETSTACK_RADIO.on();
     leds_off(LEDS_ALL);
+
+    initialise();
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(rmhb_protocol_process, ev, data) {    
@@ -455,14 +481,14 @@ PROCESS_THREAD(rmhb_protocol_process, ev, data) {
                         send_multicast(&msg, sizeof(tpwsn_msg_t));
 
                         etimer_set(&announce_timer, (announce_period * CLOCK_SECOND));
-                    } else if (etimer_expired(&beacon_timer)) {
+                    } else if (etimer_expired(&beacon_timer) && !disable_beacon) {
                         LOG_INFO("Sending data beacon\n");
 
-                        // tpwsn_beacon_t msg = {
-                        //     .msg_type = MSG_TYPE_BEACON,
-                        //     .version = token_version,
-                        // };
-                        // send_multicast(&msg, sizeof(tpwsn_beacon_t));
+                        tpwsn_beacon_t msg = {
+                            .msg_type = MSG_TYPE_BEACON,
+                            .version = token_version,
+                        };
+                        send_multicast(&msg, sizeof(tpwsn_beacon_t));
 
                         etimer_restart(&beacon_timer);
                     }
