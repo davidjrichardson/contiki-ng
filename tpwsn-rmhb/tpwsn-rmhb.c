@@ -275,7 +275,7 @@ recv_data_msg(const uip_ipaddr_t *from) {
 
     // Forward the message to a random neighbour if we aren't the sink
     if (!is_sink) {
-        LOG_INFO("Recv'd msg from ");
+        LOG_INFO("Node recv'd val %d from ", token);
         log_6addr(from);
         LOG_INFO_(" at time %lu with hops %d\n", (unsigned long) clock_time(), msg->hops);
         
@@ -291,7 +291,7 @@ recv_data_msg(const uip_ipaddr_t *from) {
             send_unicast(&neighbour->addr, msg, sizeof(tpwsn_data_t));
         }
     } else {
-        LOG_INFO("Sink recv'd msg from ");
+        LOG_INFO("Sink recv'd val %d from ", token);
         log_6addr(from);
         LOG_INFO_(" at time %lu with hops %d\n", (unsigned long) clock_time(), msg->hops);
     }
