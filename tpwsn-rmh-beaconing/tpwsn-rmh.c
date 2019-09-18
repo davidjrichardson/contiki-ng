@@ -110,6 +110,8 @@ static short beacon_delay = 5;
 
 #define MSG_TYPE_CTRL 1
 #define MSG_TYPE_RECOVER 2
+#define MSG_TYPE_BEACON 3
+#define MSG_TYPE_RMH 4
 
 struct __attribute__ ((__packed__)) beacon_msg_s {
   short msg_version;
@@ -135,6 +137,13 @@ struct __attribute__ ((__packed__)) recov_msg_s {
 };
 typedef struct recov_msg_s recov_msg_t;
 
+struct __attribute__ ((__packed__)) msg_queue_t {
+  short msg_type;
+  void *packet_ptr;
+}
+
+LIST(packet_buff);
+static void send_packet();
 static void send_recovery_data(const linkaddr_t *);
 static void reset(long);
 // --- TPWSN Vars/structs end
@@ -281,6 +290,7 @@ recv_runicast(struct runicast_conn *c, const linkaddr_t *from, uint8_t seqno) {
 
     printf("received recovery control msg from %d.%d, sending data\n", from->u8[0], from->u8[1]);
 
+    // TODO: Put this into a buffer instead of sending immediately
     send_recovery_data(&node);
   } else if (msg_wrapper->msg_type == MSG_TYPE_RECOVER) {
     recov_msg_t *msg = (recov_msg_t *) packetbuf_dataptr();

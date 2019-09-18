@@ -70,8 +70,8 @@ static bool reset_scheduled = false;
 
 #define UDP_HDR ((struct uip_udpip_hdr *)&uip_buf[UIP_LLH_LEN])
 
-static uint8_t beacon_period = 3; /* multiplied by CLOCK_SECOND later */
-static uint8_t announce_period = 5; /* multiplied by CLOCK_SECOND later */
+static uint8_t beacon_period = 10; /* multiplied by CLOCK_SECOND later */
+static uint8_t announce_period = 15; /* multiplied by CLOCK_SECOND later */
 
 struct __attribute__ ((__packed__)) tpwsn_msg_s {
   short msg_type;
@@ -82,6 +82,7 @@ struct __attribute__ ((__packed__)) tpwsn_data_s {
     short msg_type;
     short version;
     int token;
+    int hops;
 };
 typedef struct tpwsn_data_s tpwsn_data_t;
 
@@ -117,7 +118,7 @@ static void send_unicast(const uip_ipaddr_t *, const void *, size_t);
 static void send_multicast(const void *, size_t);
 
 /* Neighbour table params */
-#define NEIGHBOR_TIMEOUT 10 * CLOCK_SECOND
+#define NEIGHBOR_TIMEOUT 30 * CLOCK_SECOND
 #define MAX_NEIGHBORS 16
 LIST(neighbor_table);
 MEMB(neighbor_mem, struct tpwsn_nbr_table_s, MAX_NEIGHBORS);
@@ -211,6 +212,7 @@ recv_ctrl_msg(const uip_ipaddr_t *from) {
         .msg_type = MSG_TYPE_RECOVER,
         .version = token_version,
         .token = token,
+        .hops = -1,
     };
     send_unicast(from, &recov_msg, sizeof(tpwsn_data_t));
 }
@@ -240,16 +242,19 @@ recv_beacon(const uip_ipaddr_t *from) {
     } else if (token_version > msg->version) {
         LOG_INFO("We are newer, updating ");
         log_6addr(from);
+        LOG_INFO_("\n");
 
         tpwsn_data_t msg = {
             .msg_type = MSG_TYPE_RECOVER,
             .version = token_version,
             .token = token,
+            .hops = -1,
         };
         send_unicast(from, &msg, sizeof(tpwsn_data_t));
     } else { /* If we are behind */
         LOG_INFO("They are newer, sending control sequence to ");
         log_6addr(from);
+        LOG_INFO_("\n");
 
         tpwsn_ctrl_t msg = {
             .msg_type = MSG_TYPE_CTRL,
@@ -271,21 +276,23 @@ recv_data_msg(const uip_ipaddr_t *from) {
     if (!is_sink) {
         LOG_INFO("Recv'd msg from ");
         log_6addr(from);
-        LOG_INFO_(" at time %lu\n", (unsigned long) clock_time());
+        LOG_INFO_(" at time %lu with hops %d\n", (unsigned long) clock_time(), msg->hops);
         
         tpwsn_nbr_table_t *neighbour = pick_neighbour();
 
         if (neighbour != NULL) {
-            LOG_INFO("Forwarding packet (val: %d) to: ", token);
+            LOG_INFO("Forwarding packet (val: %d, hops: %d) to: ", token, (msg->hops + 1));
             log_6addr(&neighbour->addr);
             LOG_INFO_("\n at time %lu\n", (unsigned long) clock_time());
+
+            msg->hops = msg->hops + 1;
 
             send_unicast(&neighbour->addr, msg, sizeof(tpwsn_data_t));
         }
     } else {
         LOG_INFO("Sink recv'd msg from ");
         log_6addr(from);
-        LOG_INFO_(" at time %lu\n", (unsigned long) clock_time());
+        LOG_INFO_(" at time %lu with hops %d\n", (unsigned long) clock_time(), msg->hops);
     }
 }
 /*---------------------------------------------------------------------------*/
@@ -364,6 +371,7 @@ serial_handler(char *data) {
                     .msg_type = MSG_TYPE_DATA, 
                     .token = token, 
                     .version = token_version,
+                    .hops = 0,
                 };
 
                 LOG_INFO("Starting RMH at time %lu, sending token %d to: ", 
@@ -441,7 +449,7 @@ PROCESS_THREAD(rmhb_protocol_process, ev, data) {
                         restart_node();
                     } else if (etimer_expired(&announce_timer)) {
                         LOG_INFO("Sending neighbour announce at time %lu\n", (unsigned long) clock_time());
-                        
+
                         tpwsn_msg_t msg = { .msg_type = MSG_TYPE_ANNOUNCE };
                         send_multicast(&msg, sizeof(tpwsn_msg_t));
 
@@ -449,11 +457,11 @@ PROCESS_THREAD(rmhb_protocol_process, ev, data) {
                     } else if (etimer_expired(&beacon_timer)) {
                         LOG_INFO("Sending data beacon\n");
 
-                        tpwsn_beacon_t msg = {
-                            .msg_type = MSG_TYPE_BEACON,
-                            .version = token_version,
-                        };
-                        send_multicast(&msg, sizeof(tpwsn_beacon_t));
+                        // tpwsn_beacon_t msg = {
+                        //     .msg_type = MSG_TYPE_BEACON,
+                        //     .version = token_version,
+                        // };
+                        // send_multicast(&msg, sizeof(tpwsn_beacon_t));
 
                         etimer_restart(&beacon_timer);
                     }

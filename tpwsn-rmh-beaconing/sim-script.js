@@ -19,7 +19,7 @@ WRITE_OUTPUT = false;
 * simulationStopTick - The simulation tick to stop the simulation at (and start collecting data)
 * failureMode - The mote failure mode for the sim
 **/
-load("params.js");
+load("/Users/david/Projects/contiki-ng/tpwsn-rmh-beaconing/params.js");
 
 // Java types
 var ArrayList = Java.type("java.util.ArrayList");
@@ -269,6 +269,20 @@ while (true) {
 
             // If all motes have reported consistency, report the time and end the sim
             if (msg.indexOf('sink received \'hello\'') > -1) {
+                if (DEBUG) {
+                    for (var ids in outputs) {
+                        log.log("Closing filewriter for id " + ids + "\n");
+                        outputs[ids].close();
+                    }
+                }
+
+                consistentSet.add(mote);
+                tokenMap.putIfAbsent(mote, "hello");
+                log.log(consistentSet + "\n");
+                log.log(time + " all motes converged, closing sim\n");
+
+                endSimulation();
+            } else if (msg.indexOf('new data=hello') > -1 && mote === sinkMote) {
                 if (DEBUG) {
                     for (var ids in outputs) {
                         log.log("Closing filewriter for id " + ids + "\n");

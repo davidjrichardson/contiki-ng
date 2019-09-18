@@ -165,23 +165,6 @@ trickle_tx(void *ptr, uint8_t suppress) {
     /* Restore to 'accept incoming from any IP' */
     uip_create_unspecified(&trickle_conn->ripaddr);
 }
-
-/*---------------------------------------------------------------------------*/
-static void
-trickle_init() {
-    token = 0;
-    suppress_trickle = false;
-
-    trickle_timer_config(&tt, imin, imax, redundancy_const);
-    trickle_timer_set(&tt, trickle_tx, &tt);
-    /*
-     * At this point trickle is started and is running the first interval. All
-     * nodes 'agree' that token == 0. This will change when one of them randomly
-     * decides to generate a new one
-     */
-    etimer_set(&et, NEW_TOKEN_INTERVAL);
-}
-
 /*---------------------------------------------------------------------------*/
 static void
 serial_handler(char *data) {
