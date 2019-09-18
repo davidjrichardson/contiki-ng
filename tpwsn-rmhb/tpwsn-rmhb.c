@@ -417,6 +417,7 @@ initialise(void) {
 static void
 restart_node(void) {
     // Reset the internal state to emulate power loss
+    // TODO: stop the beacon timer & reset the neighbour table
     etimer_stop(&rt);
     reset_scheduled = false;
     NETSTACK_RADIO.on();
