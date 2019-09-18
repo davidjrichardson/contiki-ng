@@ -168,6 +168,7 @@ function failNode(failureMode) {
 function endSimulation() {
     log.log("Messages sent: " + messagesSent + "\n");
     log.log("Announcements sent: " + announcements + "\n");
+    log.log("Beacons sent: " + beacons + "\n");
     log.log("Total crashes: " + totalCrashes + "\n");
 
     var tokenCorrect = 0;
