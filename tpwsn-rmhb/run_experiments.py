@@ -22,12 +22,12 @@ from pathlib import Path
 hostname = socket.gethostname()
 
 contiki_dir = Path('..')
-experiment_dir = Path(contiki_dir, 'tpwsn-rmh/experiments')
+experiment_dir = Path(contiki_dir, 'tpwsn-rmhb/experiments')
 experiment_done_dir = Path(experiment_dir, '.done')
 abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
-script_template = Path(contiki_dir, 'tpwsn-rmh/sim-script.js')
-sim_template = Path(contiki_dir, 'tpwsn-rmh/sim_template.csc')
+script_template = Path(contiki_dir, 'tpwsn-rmhb/sim-script.js')
+sim_template = Path(contiki_dir, 'tpwsn-rmhb/sim_template.csc')
 
 RmhExperiment = namedtuple('RmhExperiment', ['d', 'n', 't'])
 beaconing_experiment = True
