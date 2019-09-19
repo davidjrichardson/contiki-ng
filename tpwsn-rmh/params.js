@@ -4,3 +4,4 @@ var moteRecoveryDelay = 1;
 var failureMode = "random";
 var moteFailureProbability = 200;
 var simulationStopTick = 12902348;
+var beaconing = true;

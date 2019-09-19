@@ -22,15 +22,15 @@ from pathlib import Path
 hostname = socket.gethostname()
 
 contiki_dir = Path('..')
-experiment_dir = Path(contiki_dir, 'tpwsn-rmh-beaconing/experiments')
+experiment_dir = Path(contiki_dir, 'tpwsn-rmh/experiments')
 experiment_done_dir = Path(experiment_dir, '.done')
 abs_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
-script_template = Path(contiki_dir, 'tpwsn-rmh-beaconing/sim-script.js')
-sim_template = Path(contiki_dir, 'tpwsn-rmh-beaconing/sim_template.csc')
+script_template = Path(contiki_dir, 'tpwsn-rmh/sim-script.js')
+sim_template = Path(contiki_dir, 'tpwsn-rmh/sim_template.csc')
 
 RmhExperiment = namedtuple('RmhExperiment', ['d', 'n', 't'])
-
+beaconing_experiment = False
 mote_failure_probability = 200
 
 if hostname == 'grace-01':
@@ -87,9 +87,7 @@ def parse_experiment(filename):
 
         msgs_sent_exp = re.compile(r'Messages sent: (?P<count>\d+)')
         announces_sent_exp = re.compile(r'Announcements sent: (?P<count>\d+)')
-        beacons_sent_exp = re.compile(r'Beacons sent: (?P<count>\d+)')
-        recov_ctrl_sent_exp = re.compile(r'Recovery ctrl messages sent: (?P<count>\d+)')
-        recov_data_sent_exp = re.compile(r'Recovery data messages sent: (?P<count>\d+)')
+        beacons_sent_exp = re.compile(r'Beacons sent: (?p<count>\d+)')
         total_crashes_exp = re.compile(r'Total crashes: (?P<crashes>\d+)')
         failed_motes_exp = re.compile(r'Motes currently failed \(\d+\): {(?P<motes>.+)}')
         reporting_correct_exp = re.compile(r'Motes reporting correctly: (?P<correct>\d+)')
@@ -104,10 +102,6 @@ def parse_experiment(filename):
                 stats["announcements"] = announces_sent_exp.match(line).groupdict().get("count")
             elif beacons_sent_exp.match(line):
                 stats["beacons"] = beacons_sent_exp.match(line).groupdict().get("count")
-            elif recov_ctrl_sent_exp.match(line):
-                stats["recov_ctrl"] = recov_ctrl_sent_exp.match(line).groupdict().get("count")
-            elif recov_data_sent_exp.match(line):
-                stats["recov_data"] = recov_data_sent_exp.match(line).groupdict().get("count")
             elif total_crashes_exp.match(line):
                 stats["total_crashes"] = total_crashes_exp.match(line).groupdict().get("crashes")
             elif failed_motes_exp.match(line):
@@ -137,9 +131,11 @@ var maxFailureCount = {motes};
 var failureMode = "{mode}";
 var moteRecoveryDelay = {recovery};
 var moteFailureProbability = {mote_failure_probability};
+var beaconing = {beaconing}
 var simulationStopTick = {stop_tick};""".format(run=run, motes=motes, recovery=recovery, 
                                                 mode=mode, stop_tick=stop_tick,
-                                                mote_failure_probability=mote_failure_probability)
+                                                mote_failure_probability=mote_failure_probability,
+                                                beaconing=str(beaconing_experiment).lower())
             
     return param_string
     
@@ -270,7 +266,7 @@ def run_experiment(experiment, control_times):
 
     os.chdir(str(abs_dir))
     if done_file.exists():
-        print("reading experiment ", experiment)
+        print("reading ", experiment)
         # Extract the tarball
         with tarfile.open(str(experiment_tarball), 'r:gz') as tar:
             os.chdir(str(experiment_dir))
