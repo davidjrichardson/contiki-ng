@@ -205,7 +205,12 @@ while (true) {
         sourceNeighbours.add(msg);
     }
 
-    if (sourceNeighbours.size() >= 3 && !hasSentToken) {
+    if (!beaconing) {
+        log.log("Starting message flood on mote " + sourceMote + "\n");
+        write(sourceMote, "start");
+
+        hasSentToken = true;
+    } else if (sourceNeighbours.size() >= 3 && !hasSentToken) {
         log.log("Starting message flood on mote " + sourceMote + "\n");
         write(sourceMote, "start");
 
