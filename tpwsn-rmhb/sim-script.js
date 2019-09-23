@@ -20,7 +20,7 @@ WRITE_OUTPUT = false;
  * failureMode - The mote failure mode for the sim\
  * beaconing - Is this run a standard RMH or Beaconing RMH run?
 **/
-load("params.js");
+load("/Users/david/Projects/contiki-ng/tpwsn-rmhb/params.js");
 
 TIMEOUT(300000, log.log("Sim time limit reached"));
 
@@ -200,12 +200,7 @@ while (true) {
         outputs[mote.getID().toString()].write(time + ";" + msg + "\n");
     }
 
-    // Figure out when its ok for the source to start the flood
-    if (mote === sourceMote && msg.indexOf('Adding to neighbour table') > -1) {
-        sourceNeighbours.add(msg);
-    }
-
-    if (sourceNeighbours.size() >= 3 && !hasSentToken) {
+    if (!hasSentToken) {
         log.log("Starting message flood on mote " + sourceMote + "\n");
         write(sourceMote, "start");
 

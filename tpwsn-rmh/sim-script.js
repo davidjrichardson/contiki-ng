@@ -200,17 +200,7 @@ while (true) {
         outputs[mote.getID().toString()].write(time + ";" + msg + "\n");
     }
 
-    // Figure out when its ok for the source to start the flood
-    if (mote === sourceMote && msg.indexOf('Adding to neighbour table') > -1) {
-        sourceNeighbours.add(msg);
-    }
-
-    if (!beaconing && !hasSentToken) {
-        log.log("Starting message flood on mote " + sourceMote + "\n");
-        write(sourceMote, "start");
-
-        hasSentToken = true;
-    } else if (sourceNeighbours.size() >= 3 && !hasSentToken) {
+    if (!hasSentToken) {
         log.log("Starting message flood on mote " + sourceMote + "\n");
         write(sourceMote, "start");
 
