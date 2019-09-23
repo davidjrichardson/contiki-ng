@@ -181,7 +181,7 @@ function endSimulation() {
 
     // Figure out how many motes have the correct token
     for each (var m in tokenMap.keySet()) {
-        if (tokenMap.get(m).indexOf('hello') !== -1) {
+        if (tokenMap.get(m).indexOf('1') !== -1) {
             tokenCorrect++;
             incorrectTokenMotes.remove(m);
         }
