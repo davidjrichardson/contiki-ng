@@ -20,7 +20,7 @@ WRITE_OUTPUT = false;
  * failureMode - The mote failure mode for the sim\
  * beaconing - Is this run a standard RMH or Beaconing RMH run?
 **/
-load("/Users/david/Projects/contiki-ng/tpwsn-rmhb/params.js");
+load("params.js");
 
 TIMEOUT(300000, log.log("Sim time limit reached"));
 
