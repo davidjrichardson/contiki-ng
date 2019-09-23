@@ -205,7 +205,7 @@ while (true) {
         sourceNeighbours.add(msg);
     }
 
-    if (!beaconing) {
+    if (!beaconing && !hasSentToken) {
         log.log("Starting message flood on mote " + sourceMote + "\n");
         write(sourceMote, "start");
 
