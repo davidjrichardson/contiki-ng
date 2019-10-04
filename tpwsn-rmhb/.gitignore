@@ -60,3 +60,7 @@ Temporary Items
 # End of https://www.gitignore.io/api/macos,jupyternotebook,jupyternotebooks,visualstudiocode
 
 nohup.out
+
+results-21x21/
+control-exp/
+experiments/

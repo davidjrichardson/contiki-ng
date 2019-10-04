@@ -218,7 +218,8 @@ while (true) {
         beacons++;
     }
 
-    if (msg.indexOf("recv'd val") > -1 && !cumilativeCoverage.contains(mote)) {
+    if ((msg.indexOf("recv'd val") > -1 && !cumilativeCoverage.contains(mote)) ||
+            (msg.indexOf("Recv'd data recovery") > -1 && !cumilativeCoverage.contains(mote))) {
         cumilativeCoverage.add(mote);
         log.log("Nodes covered: " + cumilativeCoverage.size() +" at time " + time + "\n");
     }
@@ -253,7 +254,8 @@ while (true) {
         // If there are no crashes, measure the time it takes to complete the sim
         if (maxFailureCount === 0) {
             // If the message is a consistency report then add it to the list of nodes with that message
-            if (msg.indexOf("recv'd val 1 from") > -1) {
+            if ((msg.indexOf("recv'd val 1 from") > -1) ||
+                    (msg.indexOf("Recv'd data recovery (d: 1") > -1)) {
                 consistentSet.add(mote);
                 tokenMap.putIfAbsent(mote, "1");
             }
@@ -269,7 +271,7 @@ while (true) {
 
                 consistentSet.add(mote);
                 tokenMap.putIfAbsent(mote, "1");
-                log.log(consistentSet + "\n");
+                log.log(consistentSet.size() + "\n");
                 log.log(time + " all motes converged, closing sim\n");
 
                 endSimulation();
