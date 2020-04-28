@@ -49,6 +49,7 @@
 #include "contiki.h"
 #include "net/ipv6/uip-udp-packet.h"
 #include "net/ipv6/uiplib.h"
+#include "net/routing/routing.h"
 #include "coap.h"
 #include "coap-engine.h"
 #include "coap-endpoint.h"
@@ -57,10 +58,6 @@
 #include "coap-constants.h"
 #include "coap-keystore.h"
 #include "coap-keystore-simple.h"
-
-#if UIP_CONF_IPV6_RPL
-#include "rpl.h"
-#endif /* UIP_CONF_IPV6_RPL */
 
 /* Log configuration */
 #include "coap-log.h"
@@ -73,20 +70,12 @@
 #endif /* WITH_DTLS */
 
 /* sanity check for configured values */
-#if COAP_MAX_PACKET_SIZE > (UIP_BUFSIZE - UIP_LLH_LEN - UIP_IPH_LEN - UIP_UDPH_LEN)
+#if COAP_MAX_PACKET_SIZE > (UIP_BUFSIZE - UIP_IPH_LEN - UIP_UDPH_LEN)
 #error "UIP_CONF_BUFFER_SIZE too small for COAP_MAX_CHUNK_SIZE"
 #endif
 
 #define SERVER_LISTEN_PORT        UIP_HTONS(COAP_DEFAULT_PORT)
 #define SERVER_LISTEN_SECURE_PORT UIP_HTONS(COAP_DEFAULT_SECURE_PORT)
-
-/* direct access into the buffer */
-#define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
-#if NETSTACK_CONF_WITH_IPV6
-#define UIP_UDP_BUF  ((struct uip_udp_hdr *)&uip_buf[uip_l2_l3_hdr_len])
-#else
-#define UIP_UDP_BUF  ((struct uip_udp_hdr *)&uip_buf[UIP_LLH_LEN + UIP_IPH_LEN])
-#endif
 
 #ifdef WITH_DTLS
 static dtls_handler_t cb;
@@ -260,13 +249,12 @@ coap_endpoint_is_secure(const coap_endpoint_t *ep)
 int
 coap_endpoint_is_connected(const coap_endpoint_t *ep)
 {
-#if UIP_CONF_IPV6_RPL
 #ifndef CONTIKI_TARGET_NATIVE
-  if(rpl_get_any_dag() == NULL) {
+  if(!uip_is_addr_linklocal(&ep->ipaddr)
+    && NETSTACK_ROUTING.node_is_reachable() == 0) {
     return 0;
   }
 #endif
-#endif /* UIP_CONF_IPV6_RPL */
 
 #ifdef WITH_DTLS
   if(ep != NULL && ep->secure != 0) {

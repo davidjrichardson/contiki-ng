@@ -48,12 +48,14 @@
 #include "sys/stack-check.h"
 #include "dev/watchdog.h"
 
+#include "net/queuebuf.h"
 #include "net/app-layer/coap/coap-engine.h"
+#include "net/app-layer/snmp/snmp.h"
 #include "services/rpl-border-router/rpl-border-router.h"
 #include "services/orchestra/orchestra.h"
 #include "services/shell/serial-shell.h"
 #include "services/simple-energest/simple-energest.h"
-#include "services/tpwsn-neighbour-discovery/neighbour-discovery.h"
+#include "services/tsch-cs/tsch-cs.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -89,6 +91,9 @@ main(void)
 
   platform_init_stage_two();
 
+#if QUEUEBUF_ENABLED
+  queuebuf_init();
+#endif /* QUEUEBUF_ENABLED */
   netstack_init();
   node_id_init();
 
@@ -143,13 +148,19 @@ main(void)
   LOG_DBG("With CoAP\n");
 #endif /* BUILD_WITH_SHELL */
 
+#if BUILD_WITH_SNMP
+  snmp_init();
+  LOG_DBG("With SNMP\n");
+#endif /* BUILD_WITH_SNMP */
+
 #if BUILD_WITH_SIMPLE_ENERGEST
   simple_energest_init();
 #endif /* BUILD_WITH_SIMPLE_ENERGEST */
 
-#if BUILD_WITH_TPWSN_ND
-  tpwsn_neighbour_discovery_init();
-#endif /* BUILD_WITH_TPWSN_ND */
+#if BUILD_WITH_TSCH_CS
+  /* Initialize the channel selection module */
+  tsch_cs_adaptations_init();
+#endif /* BUILD_WITH_TSCH_CS */
 
   autostart_start(autostart_processes);
 

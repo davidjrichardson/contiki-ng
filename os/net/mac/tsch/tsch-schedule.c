@@ -171,6 +171,45 @@ tsch_schedule_get_link_by_handle(uint16_t handle)
   return NULL;
 }
 /*---------------------------------------------------------------------------*/
+static const char *
+print_link_options(uint16_t link_options)
+{
+  static char buffer[20];
+  unsigned length;
+
+  buffer[0] = '\0';
+  if(link_options & LINK_OPTION_TX) {
+    strcat(buffer, "Tx|");
+  }
+  if(link_options & LINK_OPTION_RX) {
+    strcat(buffer, "Rx|");
+  }
+  if(link_options & LINK_OPTION_SHARED) {
+    strcat(buffer, "Sh|");
+  }
+  length = strlen(buffer);
+  if(length > 0) {
+    buffer[length - 1] = '\0';
+  }
+
+  return buffer;
+}
+/*---------------------------------------------------------------------------*/
+static const char *
+print_link_type(uint16_t link_type)
+{
+  switch(link_type) {
+  case LINK_TYPE_NORMAL:
+    return "NORMAL";
+  case LINK_TYPE_ADVERTISING:
+    return "ADV";
+  case LINK_TYPE_ADVERTISING_ONLY:
+    return "ADV_ONLY";
+  default:
+    return "?";
+  }
+}
+/*---------------------------------------------------------------------------*/
 /* Adds a link to a slotframe, return a pointer to it (NULL if failure) */
 struct tsch_link *
 tsch_schedule_add_link(struct tsch_slotframe *slotframe,
@@ -184,9 +223,6 @@ tsch_schedule_add_link(struct tsch_slotframe *slotframe,
     /* Validation of specified timeslot and channel_offset */
     if(timeslot > (slotframe->size.val - 1)) {
       LOG_ERR("! add_link invalid timeslot: %u\n", timeslot);
-      return NULL;
-    } else if(channel_offset > 15) {
-      LOG_ERR("! add_link invalid channel_offset: %u\n", channel_offset);
       return NULL;
     }
 
@@ -218,8 +254,10 @@ tsch_schedule_add_link(struct tsch_slotframe *slotframe,
         }
         linkaddr_copy(&l->addr, address);
 
-        LOG_INFO("add_link %u %u %u %u %u ",
-               slotframe->handle, link_options, link_type, timeslot, channel_offset);
+        LOG_INFO("add_link sf=%u opt=%s type=%s ts=%u ch=%u addr=",
+                 slotframe->handle,
+                 print_link_options(link_options),
+                 print_link_type(link_type), timeslot, channel_offset);
         LOG_INFO_LLADDR(address);
         LOG_INFO_("\n");
         /* Release the lock before we update the neighbor (will take the lock) */
@@ -260,8 +298,10 @@ tsch_schedule_remove_link(struct tsch_slotframe *slotframe, struct tsch_link *l)
       if(l == current_link) {
         current_link = NULL;
       }
-      LOG_INFO("remove_link %u %u %u %u ",
-             slotframe->handle, l->link_options, l->timeslot, l->channel_offset);
+      LOG_INFO("remove_link sf=%u opt=%s type=%s ts=%u ch=%u addr=",
+               slotframe->handle,
+               print_link_options(l->link_options),
+               print_link_type(l->link_type), l->timeslot, l->channel_offset);
       LOG_INFO_LLADDR(&l->addr);
       LOG_INFO_("\n");
 

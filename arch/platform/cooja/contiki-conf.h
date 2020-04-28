@@ -48,7 +48,7 @@
 
 #define COOJA 1
 
-#define LEDS_CONF_LEGACY_API 1
+#define ASSERT_CONF_RETURNS  1
 
 #ifndef EEPROM_CONF_SIZE
 #define EEPROM_CONF_SIZE				1024
@@ -70,18 +70,14 @@
 #define CSMA_CONF_ACK_WAIT_TIME                RTIMER_SECOND / 500
 #define CSMA_CONF_AFTER_ACK_DETECTED_WAIT_TIME 0
 
+#endif /* NETSTACK_CONF_H */
+
 /* Radio setup */
 #define NETSTACK_CONF_RADIO cooja_radio_driver
-
-#endif /* NETSTACK_CONF_H */
 
 /* Default network config */
 #if NETSTACK_CONF_WITH_IPV6
 
-
-
-/* Radio setup */
-#define NETSTACK_CONF_RADIO cooja_radio_driver
 
 /* configure network size and density */
 #ifndef NETSTACK_MAX_ROUTE_ENTRIES
@@ -122,6 +118,10 @@ typedef unsigned long clock_time_t;
 /* Use 64-bit rtimer (default in Contiki-NG is 32) */
 #define RTIMER_CONF_CLOCK_SIZE 8
 
+/* 1 len byte, 2 bytes CRC */
+#define RADIO_PHY_OVERHEAD         3
+/* 250kbps data rate. One byte = 32us */
+#define RADIO_BYTE_AIR_TIME       32
 #define RADIO_DELAY_BEFORE_TX 0
 #define RADIO_DELAY_BEFORE_RX 0
 #define RADIO_DELAY_BEFORE_DETECT 0
@@ -139,8 +139,29 @@ typedef unsigned long clock_time_t;
 
 #define CFS_CONF_OFFSET_TYPE	long
 
-#define NETSTACK_RADIO_MAX_PAYLOAD_LEN 125
-
 #define PLATFORM_CONF_SUPPORTS_STACK_CHECK  0
 
+/*---------------------------------------------------------------------------*/
+/* Support for the new GPIO HAL */
+#define GPIO_HAL_CONF_ARCH_HDR_PATH      "dev/gpio-hal-arch.h"
+#define GPIO_HAL_CONF_ARCH_SW_TOGGLE     1
+#define GPIO_HAL_CONF_PORT_PIN_NUMBERING 0
+#define GPIO_HAL_CONF_PIN_COUNT          4
+
+/* Virtual LED pins 0, 1, 2 (Green, Red, Yellow) */
+#define COOJA_LED_GREEN_PIN              0
+#define COOJA_LED_RED_PIN                1
+#define COOJA_LED_YELLOW_PIN             2
+
+/* Virtual button on pin 3 */
+#define COOJA_BTN_PIN                    3
+
+#define BUTTON_HAL_CONF_DEBOUNCE_DURATION 0
+/*---------------------------------------------------------------------------*/
+/* Virtual LED colors */
+#define LEDS_CONF_COUNT                  3
+#define LEDS_CONF_GREEEN                 1
+#define LEDS_CONF_RED                    2
+#define LEDS_CONF_YELLOW                 4
+/*---------------------------------------------------------------------------*/
 #endif /* CONTIKI_CONF_H_ */

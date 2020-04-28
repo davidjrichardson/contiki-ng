@@ -64,7 +64,7 @@
 #endif
 speed_t b_rate = BAUDRATE;
 
-int verbose = 1;
+int verbose = 2;
 const char *ipaddr;
 const char *netmask;
 int slipfd = 0;
@@ -579,8 +579,10 @@ tun_alloc(char *dev, int tap)
    *        IFF_NO_PI - Do not provide packet information
    */
   ifr.ifr_flags = (tap ? IFF_TAP : IFF_TUN) | IFF_NO_PI;
-  if(*dev != 0)
-    strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+  if(*dev != 0) {
+    strncpy(ifr.ifr_name, dev, sizeof(ifr.ifr_name) - 1);
+    ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
+  }
 
   if((err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0 ) {
     close(fd);
@@ -793,9 +795,9 @@ main(int argc, char **argv)
 
     case 's':
       if(strncmp("/dev/", optarg, 5) == 0) {
-	siodev = optarg + 5;
+        siodev = optarg + 5;
       } else {
-	siodev = optarg;
+        siodev = optarg;
       }
       break;
 
@@ -806,10 +808,11 @@ main(int argc, char **argv)
 
     case 't':
       if(strncmp("/dev/", optarg, 5) == 0) {
-	strncpy(tundev, optarg + 5, sizeof(tundev));
+        strncpy(tundev, optarg + 5, sizeof(tundev) - 1);
       } else {
-	strncpy(tundev, optarg, sizeof(tundev));
+        strncpy(tundev, optarg, sizeof(tundev) - 1);
       }
+      tundev[sizeof(tundev) - 1] = '\0';
       break;
 
     case 'a':
@@ -853,14 +856,20 @@ fprintf(stderr," -s siodev      Serial device (default /dev/ttyUSB0)\n");
 fprintf(stderr," -M             Interface MTU (default and min: 1280)\n");
 fprintf(stderr," -T             Make tap interface (default is tun interface)\n");
 fprintf(stderr," -t tundev      Name of interface (default tap0 or tun0)\n");
+#ifdef __APPLE__
+fprintf(stderr," -v level       Verbosity level\n");
+#else
 fprintf(stderr," -v[level]      Verbosity level\n");
+#endif
 fprintf(stderr,"    -v0         No messages\n");
-fprintf(stderr,"    -v1         Encapsulated SLIP debug messages (default)\n");
-fprintf(stderr,"    -v2         Printable strings after they are received\n");
+fprintf(stderr,"    -v1         Encapsulated SLIP debug messages\n");
+fprintf(stderr,"    -v2         Printable strings after they are received (default)\n");
 fprintf(stderr,"    -v3         Printable strings and SLIP packet notifications\n");
 fprintf(stderr,"    -v4         All printable characters as they are received\n");
 fprintf(stderr,"    -v5         All SLIP packets in hex\n");
-fprintf(stderr,"    -v          Equivalent to -v3\n");
+#ifndef __APPLE__
+fprintf(stderr,"    -v          Equivalent to -v2\n");
+#endif
 fprintf(stderr," -d[basedelay]  Minimum delay between outgoing SLIP packets.\n");
 fprintf(stderr,"                Actual delay is basedelay*(#6LowPAN fragments) milliseconds.\n");
 fprintf(stderr,"                -d is equivalent to -d10.\n");

@@ -56,7 +56,7 @@ extern struct tsch_packet *dequeued_array[TSCH_DEQUEUED_ARRAY_SIZE];
 extern struct ringbufindex input_ringbuf;
 extern struct input_packet input_array[TSCH_MAX_INCOMING_PACKETS];
 /* Last clock_time_t where synchronization happened */
-extern clock_time_t last_sync_time;
+extern clock_time_t tsch_last_sync_time;
 /* Counts the length of the current burst */
 extern int tsch_current_burst_count;
 
@@ -67,10 +67,11 @@ extern int tsch_current_burst_count;
  * The offset to the ASN and performs a hopping sequence lookup.
  *
  * \param asn A given ASN
- * \param channel_offset A given channel offset
+ * \param channel_offset Link's channel offset
+ * \param p Packet that can override the link's channel offset
  * \return The resulting channel
  */
-uint8_t tsch_calculate_channel(struct tsch_asn_t *asn, uint8_t channel_offset);
+uint8_t tsch_calculate_channel(struct tsch_asn_t *asn, uint16_t channel_offset, struct tsch_packet *p);
 /**
  * Checks if the TSCH lock is set. Accesses to global structures outside of
  * interrupts must be done through the lock, unless the sturcutre has
