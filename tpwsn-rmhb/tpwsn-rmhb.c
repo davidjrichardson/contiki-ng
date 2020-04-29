@@ -69,7 +69,7 @@ static bool disable_beacon = false;
 #define MSG_TYPE_DATA 4
 #define MSG_TYPE_ANNOUNCE 5
 
-#define UDP_HDR ((struct uip_udpip_hdr *)&uip_buf[UIP_LLH_LEN])
+// #define UDP_HDR ((struct uip_udpip_hdr *)uip_buf)
 
 static uint8_t beacon_period = 10; /* multiplied by CLOCK_SECOND later */
 static uint8_t announce_period = 15; /* multiplied by CLOCK_SECOND later */
@@ -302,7 +302,7 @@ tcpip_handler(void) {
     if (uip_newdata()) {
         tpwsn_msg_t *msg = (tpwsn_msg_t *) uip_appdata;
         uip_ipaddr_t src;
-        uip_ipaddr_copy(&src, &UDP_HDR->srcipaddr);
+        uip_ipaddr_copy(&src, &UIP_IP_BUF->srcipaddr);
 
         switch (msg->msg_type) {
             case MSG_TYPE_ANNOUNCE:     recv_announcement(&src); break;
